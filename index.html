@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>nicotwi物化 ver1.7.5</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="style.css">
+
+  <!-- フォントはfonts.cssで埋め込み済み(k8x12S, GenZenGothicKaiC) -->
+</head>
+<body>
+<div id="loadingOverlay" class="hidden"></div>
+    <div id="container">
+        <div id="commentArea">
+            <div id="floatingCommentsWrapper"></div>
+            
+            <div id="toggleLogDisplayContainer">
+                <input type="checkbox" id="toggleLogDisplayCheckbox">
+                <label for="toggleLogDisplayCheckbox">投稿ログ表示</label>
+            </div>
+
+            <div id="toggleSpeechContainer">
+                <input type="checkbox" id="toggleSpeechCheckbox">
+                <label for="toggleSpeechCheckbox">🔊 読み上げ</label>
+            </div>
+            <div id="toggleRainbowContainer">
+                <input type="checkbox" id="toggleRainbowCheckbox">
+                <label for="toggleRainbowCheckbox">🌈 虹色アニメ</label>
+            </div>
+            
+            <div id="logContainer"></div>
+        </div>
+
+        <div id="mainArea">
+            <div id="headerSection">
+                <h1>nicotwi物化</h1>
+                <div id="topUsers">
+                    <h3>直近100件の投稿者数　3選</h3>
+                    <ul id="topUserList">
+                        <li id="top-rank-1">1位: ―</li>
+                        <li id="top-rank-2">2位: ―</li>
+                        <li id="top-rank-3">3位: ―</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div id="usageWarning"></div>
+
+　　　　<div id="connectionStatus" style="color: #ff4d4d; background-color: rgba(255, 0, 0, 0.1); padding: 5px 10px; border-radius: 5px; margin-bottom: 10px; display: none; text-align: center; font-weight: bold;">
+    接続がありません
+</div>
+<form id="tweetForm">
+    <input type="text" id="nickname" placeholder="名前(匿名歓迎)" required>
+    <input type="text" id="comment" placeholder="つぶやこう！" maxlength="140" required>
+<div id="splitInputContainer" style="display: none; flex-direction: column; width: 100%; gap: 10px; margin-top: 10px;">
+    <input type="text" id="comment_part1" placeholder="前半（朱色・赤）" maxlength="70">
+    <input type="text" id="comment_part2" placeholder="後半（銀・藍）" maxlength="70">
+</div>
+    
+    <div class="form-row">
+        <select id="commentType">
+            <option value="normal" selected>通常コメント</option>
+            <option value="center_fixed">中央に固定表示 (20秒)</option>
+        </select>
+        
+        <select id="predefinedColor">
+           <option value="#FFFFFF" selected>白</option>
+           <option value="#FF0000">赤</option>
+           <option value="#FFFF00">黄</option>
+           <option value="#00FFFF">シアン</option>
+           <option value="#00FF00">緑</option>
+           <option value="rainbow">虹色</option>
+           <option value="custom">カスタムカラー</option>
+           <option value="split_custom">五千兆</option>
+           <option value="dot">ドット</option>
+        </select>
+        
+        <div id="colorPickerContainer">
+            <label for="commentColorPicker">カスタムカラー:</label>
+            <input type="color" id="commentColorPicker" value="#FFFFFF">
+        </div>
+        
+        <input type="hidden" id="parentKey" value="">
+        <button type="button" id="clearInputBtn" onclick="(function(){ document.getElementById('comment').value=''; document.getElementById('comment_part1').value=''; document.getElementById('comment_part2').value=''; })()">クリア</button>
+        <button type="submit">投稿</button>
+    </div>
+</form>
+
+            <div id="tweetStream"></div>
+            <div id="allUsers">
+                <h3>直近100件投稿数ランキング (全投稿者)</h3>
+                <ul id="allUserList"></ul>
+            </div>
+            <div id="replayPanel">
+                <h3>🎬 投稿再現</h3>
+                <!-- Firebaseモード -->
+                <div class="replay-row">
+                    <span>第</span>
+                    <input type="number" id="replayFrom" value="1" min="1" placeholder="開始">
+                    <span>〜</span>
+                    <input type="number" id="replayTo" value="10" min="1" placeholder="終了">
+                    <span>件目</span>
+                    <input type="range" id="replayInterval" min="100" max="1000" value="500" step="100">
+                    <span id="replayIntervalLabel">0.5秒</span>
+                    <button id="replayStartBtn">▶ Firebase</button>
+                    <button id="replayStopBtn" disabled>■</button>
+                </div>
+                <!-- txtファイルモード -->
+                <div class="replay-row" style="margin-top:6px;">
+                    <label style="white-space:nowrap;">📂 txtファイル:</label>
+                    <input type="file" id="replayTxtFile" accept=".txt" style="flex:1; min-width:0; font-size:13px; padding:4px 6px;">
+                    <button id="replayTxtStartBtn">▶ txt再生</button>
+                </div>
+                <div id="replayStatus"></div>
+            </div>
+
+            <div id="adminPanel">
+                <button onclick="openExportModal()" style="background:#f0c000; color:#222; font-family:'k8x12S',sans-serif; font-size:20px; padding:10px 20px; border:none; border-radius:5px; cursor:pointer;">📥 履歴をtxtで書き出し</button>
+                <div class="credit">制作者: 神奈川県立厚木高校79期　物理化学部コンピュータ班及び無線班　熊澤蒼太</div>
+            </div>
+        </div>
+        
+        <div id="concurrentUsers">同接数: 0</div>
+    </div>
+
+    <!-- 書き出しモーダル -->
+    <div id="exportModal">
+        <div id="exportModalBox">
+            <h3>📥 履歴の書き出し範囲</h3>
+            <button class="export-option-btn" id="exportBtnRecent" onclick="runExport('recent')">
+                📋 直近100件（メモリ上のデータ）
+            </button>
+            <button class="export-option-btn" id="exportBtnToday" onclick="runExport('today')">
+                📅 今日の投稿（JST）
+            </button>
+            <button class="export-option-btn" id="exportBtnAll" onclick="runExport('all')">
+                🗄️ データベース上の全件
+            </button>
+            <div id="exportModalStatus"></div>
+            <button id="exportModalCancel" onclick="closeExportModal()">キャンセル</button>
+        </div>
+    </div>
+
+
+
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.6/purify.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
