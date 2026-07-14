@@ -1,4 +1,4 @@
-  const firebaseConfig = {
+ const firebaseConfig = {
     apiKey: "AIzaSyA5Bhf6p6zVjnKc9npB85fxG_1BBdUdGKY",
   authDomain: "nicotwibukka.firebaseapp.com",
   databaseURL: "https://nicotwibukka-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -1093,11 +1093,11 @@ if (predefinedColorSelect.value === 'rainbow') {
     }
 }
 
-  form.addEventListener('submit', function(e) {
-    e.preventDefault(); 
-    submitTweet(); 
+  form.addEventListener('submit', function(e) {
+    e.preventDefault(); 
+    submitTweet(); 
 
-  });
+  });
 
 
   // リプレイパネルのイベント
@@ -1976,13 +1976,13 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
     });
     hideLoading();
 
-    // child_changed リスナー
-    db.ref('tweets').on('child_changed', async (snapshot) => {
-      await incrementReadCount();
+    // child_changed リスナー
+    db.ref('tweets').on('child_changed', async (snapshot) => {
+      await incrementReadCount();
 
-      const key = snapshot.key;
-      const data = snapshot.val();
-      allTweets[key] = data; // allTweets の既存ツイートを更新
+      const key = snapshot.key;
+      const data = snapshot.val();
+      allTweets[key] = data; // allTweets の既存ツイートを更新
 
 
 
@@ -2000,56 +2000,56 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
           appendTweetToStream(key, data, null, false);
       }
       updateUserStats();
-    }, (error) => {
-      console.error("child_changed リスナーでエラー:", error);
-    });
+    }, (error) => {
+      console.error("child_changed リスナーでエラー:", error);
+    });
 
 
-    // --- ↓ ここから元のコードで setupRealtimeListeners の外に出ていた部分を中に移動 ↓ ---
-    // child_removed リスナー
-    db.ref('tweets').on('child_removed', async (snapshot) => {
-      await incrementReadCount();
+    // --- ↓ ここから元のコードで setupRealtimeListeners の外に出ていた部分を中に移動 ↓ ---
+    // child_removed リスナー
+    db.ref('tweets').on('child_removed', async (snapshot) => {
+      await incrementReadCount();
 
-      const key = snapshot.key;
-      removeTweetFromDOMAndMaps(key);
-      delete allTweets[key];
+      const key = snapshot.key;
+      removeTweetFromDOMAndMaps(key);
+      delete allTweets[key];
       updateUserStats();
       // 番号はdata.tweetNumberを使うため振り直し不要
-    }, (error) => {
-      console.error("child_removed リスナーでエラー:", error);
-    });
-    console.log("DEBUG: child_removed リスナーを設定しました。");
+    }, (error) => {
+      console.error("child_removed リスナーでエラー:", error);
+    });
+    console.log("DEBUG: child_removed リスナーを設定しました。");
 
-    // presence 関連のロジック
-    const presenceRef = db.ref('presence');
-    const amOnline = db.ref('.info/connected');
+    // presence 関連のロジック
+    const presenceRef = db.ref('presence');
+    const amOnline = db.ref('.info/connected');
 
-    let userId = localStorage.getItem('firebaseUserId');
-    if (!userId) {
-      userId = db.ref().push().key;
-      localStorage.setItem('firebaseUserId', userId);
-    }
-    const userPresenceRef = presenceRef.child(userId);
+    let userId = localStorage.getItem('firebaseUserId');
+    if (!userId) {
+      userId = db.ref().push().key;
+      localStorage.setItem('firebaseUserId', userId);
+    }
+    const userPresenceRef = presenceRef.child(userId);
 
-    amOnline.on('value', (snapshot) => {
-      if (snapshot.val()) {
-        userPresenceRef.onDisconnect().remove();
+    amOnline.on('value', (snapshot) => {
+      if (snapshot.val()) {
+        userPresenceRef.onDisconnect().remove();
         userPresenceRef.set(true).catch(e => console.error("Failed to set presence:", e));
 
 
-      }
-    });
-    console.log("DEBUG: amOnline リスナーを設定しました。");
+      }
+    });
+    console.log("DEBUG: amOnline リスナーを設定しました。");
 
-    presenceRef.on('value', async (snapshot) => {
-      await incrementReadCount();
-      const count = snapshot.numChildren();
-      concurrentUsersDiv.textContent = `同接数: ${count}`;
-    }, (error) => {
-      console.error("presence リスナーでエラー:", error);
-    });
-    console.log("DEBUG: presenceRef リスナーを設定しました。");
-  }
+    presenceRef.on('value', async (snapshot) => {
+      await incrementReadCount();
+      const count = snapshot.numChildren();
+      concurrentUsersDiv.textContent = `同接数: ${count}`;
+    }, (error) => {
+      console.error("presence リスナーでエラー:", error);
+    });
+    console.log("DEBUG: presenceRef リスナーを設定しました。");
+  }
 
   function openExportModal() {
     const modal = document.getElementById('exportModal');
@@ -2540,6 +2540,9 @@ function toRainbowText(text) {
     for (let i = 0; i < totalChars; i++) {
         const colorStepIndex = i % RAINBOW_COLORS_COUNT;
         const delay = -(fixedDelayStep * colorStepIndex); 
+        if (i > 0) {
+            html += '<wbr>'; // span境界に明示的な改行可能点を作る（数字の連続などで折り返せない問題の対策）
+        }
         html += `<span class="rainbow-char" style="animation-delay: ${delay}s;">${chars[i]}</span>`;
     }
 
@@ -2590,4 +2593,3 @@ function toStaticRainbowText(text) {
         ">${p2}</span>
     </div>`;
 }
-
