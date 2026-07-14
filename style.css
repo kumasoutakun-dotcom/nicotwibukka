@@ -504,6 +504,16 @@ select#commentType {
     padding-top: 6px;
     padding-bottom: 8px;
 }
+select#commentSize {
+    flex: none;
+    width: auto;
+    min-width: 60px;
+    max-width: 80px;
+    font-family: 'k8x12S', sans-serif;
+    line-height: 1.8;
+    padding-top: 6px;
+    padding-bottom: 8px;
+}
 
 #clearInputBtn {
     padding: 10px 20px;
