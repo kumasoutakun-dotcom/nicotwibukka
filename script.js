@@ -24,6 +24,12 @@
   const predefinedColorSelect = document.getElementById('predefinedColor');
   const commentColorPicker = document.getElementById('commentColorPicker');
   const commentTypeSelect = document.getElementById('commentType');
+  const commentSizeSelect = document.getElementById('commentSize');
+  // 文字サイズ（小・中・大）に対応する基準スケール（中=1.0）
+  const COMMENT_SIZE_SCALE = { small: 0.6, medium: 1.0, large: 1.4 };
+  function getSizeScale(size) {
+      return COMMENT_SIZE_SCALE[size] || COMMENT_SIZE_SCALE.medium;
+  }
   const toggleLogDisplayCheckbox = document.getElementById('toggleLogDisplayCheckbox');
   const toggleRainbowCheckbox = document.getElementById('toggleRainbowCheckbox');
   let rainbowAnimEnabled = localStorage.getItem('rainbowAnimEnabled') !== 'false';
@@ -63,7 +69,7 @@
       loadingOverlay.classList.add('hidden');
   }
 
-  const THIS_HTML_VERSION_KEY = "v1.7.5"; // <-- ここ
+  const THIS_HTML_VERSION_KEY = "v1.7.6"; // <-- ここ
   let isCurrentVersion = false; // 現在のHTMLが最新バージョンかどうかを示すフラグ
   // --- ここまで ---
 
@@ -383,9 +389,9 @@ function limitComments() {
   // ---- リプレイ機能 ----
   let replayTimer = null;
 
-  function showFloatingCommentReplay(key, text, color) {
+  function showFloatingCommentReplay(key, text, color, size = 'medium') {
     // 通常の弾幕表示と同じコードパスを使用（DOMPurify・タイムスタンプチェックをスキップ）
-    showFloatingComment(key, text, color, Date.now(), true);
+    showFloatingComment(key, text, color, Date.now(), true, size);
   }
 
   async function startReplay() {
@@ -437,9 +443,9 @@ function limitComments() {
         status.textContent = `再現中: tweetナンバー${data.tweetNumber} (${idx + 1}/${entries.length}件)`;
         if (data) {
             if (data.type === 'center_fixed') {
-                showCenterFixedComment(key + '_r' + idx, data.text, data.color, Date.now(), true);
+                showCenterFixedComment(key + '_r' + idx, data.text, data.color, Date.now(), true, data.size || 'medium');
             } else {
-                showFloatingCommentReplay(key + '_r' + idx, data.text, data.color);
+                showFloatingCommentReplay(key + '_r' + idx, data.text, data.color, data.size || 'medium');
             }
         }
         idx++;
@@ -456,18 +462,21 @@ function limitComments() {
   }
 
   /**
-   * txt一行をパースして { text, color, type } を返す
-   * 書式: #NUM [日時] 名前: 内容 |color:XXX|type:YYY
+   * txt一行をパースして { text, color, type, size } を返す
+   * 書式: #NUM [日時] 名前: 内容 |color:XXX|type:YYY|size:ZZZ
+   * ※ |size:ZZZ は旧バージョンのtxtには存在しないため省略可（その場合はmedium扱い）
    */
   function parseTxtLine(line) {
-    // 末尾のメタタグを取り出す
-    const metaMatch = line.match(/\|color:([^\|]+)\|type:(\S+)\s*$/);
+    // 末尾のメタタグを取り出す（sizeは旧形式との互換のため任意）
+    const metaMatch = line.match(/\|color:([^\|]+)\|type:([^\|]+)(?:\|size:([^\|]+))?\s*$/);
     let savedColor = null;
     let savedType  = 'normal';
+    let savedSize  = 'medium';
     let body = line;
     if (metaMatch) {
         savedColor = metaMatch[1].trim();
         savedType  = metaMatch[2].trim();
+        savedSize  = metaMatch[3] ? metaMatch[3].trim() : 'medium';
         body = line.slice(0, metaMatch.index); // メタ部分を除いた行
     }
 
@@ -475,7 +484,7 @@ function limitComments() {
     const m = body.match(/^#\S+\s+\[.*?\]\s+.+?:\s(.+)$/);
     if (!m) return null;
     let content = m[1].trim();
-    let text, color, type;
+    let text, color, type, size;
 
     if (content.startsWith('【五千兆】')) {
         const bodyPart = content.replace('【五千兆】', '').trim();
@@ -485,16 +494,19 @@ function limitComments() {
         text  = `__SPLIT__${part1}\n${part2}`;
         color = savedColor || '5000trillion';
         type  = savedType;
+        size  = savedSize;
     } else if (content.startsWith('【ドット】')) {
         text  = content.replace('【ドット】', '');
         color = savedColor || 'dot';
         type  = savedType;
+        size  = savedSize;
     } else {
         text  = content;
         color = savedColor || '#ffffff';
         type  = savedType;
+        size  = savedSize;
     }
-    return { text, color, type };
+    return { text, color, type, size };
   }
 
   async function startTxtReplay() {
@@ -538,9 +550,9 @@ function limitComments() {
         if (parsed) {
             const key = 'txt_' + idx + '_' + Date.now();
             if (parsed.type === 'center_fixed') {
-                showCenterFixedComment(key, parsed.text, parsed.color, Date.now(), true);
+                showCenterFixedComment(key, parsed.text, parsed.color, Date.now(), true, parsed.size || 'medium');
             } else {
-                showFloatingCommentReplay(key, parsed.text, parsed.color);
+                showFloatingCommentReplay(key, parsed.text, parsed.color, parsed.size || 'medium');
             }
         }
         idx++;
@@ -549,7 +561,7 @@ function limitComments() {
     playNextTxt();
   }
 
-  function showFloatingComment(key, text, color, timestamp, skipSanitize = false) {
+  function showFloatingComment(key, text, color, timestamp, skipSanitize = false, size = 'medium') {
     // skipSanitize=true のとき（リプレイ時）はDOMPurifyをスキップしてサロゲートペア文字を保持
     const sanitizedText = skipSanitize ? (text || '') : DOMPurify.sanitize(text, { USE_PROFILES: { html: true } });
     if (!skipSanitize && (containsSpam(sanitizedText) || containsForbiddenHtmlTags(text))) {
@@ -584,6 +596,7 @@ function limitComments() {
 
     const commentElement = document.createElement('div');
     commentElement.className = 'floating-comment';
+    commentElement.classList.add('size-' + (size || 'medium'));
     commentElement.setAttribute('data-key', key); // Firebaseキーをデータ属性として設定
 
     if (color === 'rainbow') {
@@ -670,7 +683,7 @@ function limitComments() {
     requestAnimationFrame(animateFloatingComment);
 }
 
-  function showCenterFixedComment(key, text, color, timestamp, skipSanitize = false) {
+  function showCenterFixedComment(key, text, color, timestamp, skipSanitize = false, size = 'medium') {
     // skipSanitize=true（リプレイ時）: DOMPurifyをスキップしてサロゲートペア文字を保持
     const sanitizedText = skipSanitize ? (text || '') : DOMPurify.sanitize(text);
 
@@ -689,7 +702,12 @@ function limitComments() {
     if (activeCenterFixedComments.has(key)) {
         const existing = activeCenterFixedComments.get(key);
         existing.timestamp = timestamp;
-        
+
+        // 文字サイズクラスを更新
+        existing.element.classList.remove('size-small', 'size-medium', 'size-large');
+        existing.element.classList.add('size-' + (size || 'medium'));
+        existing.element.dataset.size = size || 'medium';
+
         // ★★★ 既存のコメントを更新する部分を修正 ★★★
         if (color === 'rainbow') {
             existing.element.innerHTML = toRainbowText(sanitizedText);
@@ -712,7 +730,9 @@ function limitComments() {
 
     const div = document.createElement('div');
     div.className = 'center-fixed-comment';
-    
+    div.classList.add('size-' + (size || 'medium'));
+    div.dataset.size = size || 'medium';
+
     // ★★★ 新規コメントを作成する部分を修正 ★★★
     if (color === 'rainbow') {
         div.innerHTML = toRainbowText(sanitizedText);
@@ -751,6 +771,9 @@ function limitComments() {
      
   function adjustCenterFixedCommentFontSize(element) {
       const targetWidth = commentArea.clientWidth * 0.9;
+      const sizeScale = getSizeScale(element.dataset.size);
+      const baseNormalSize = 70 * sizeScale;
+      const baseSplitSize = 70 * sizeScale;
 
       const partUpper = element.querySelector('.part-upper');
       const partLower = element.querySelector('.part-lower');
@@ -785,19 +808,19 @@ function limitComments() {
           testDiv.appendChild(testLower);
           document.body.appendChild(testDiv);
 
-          testUpper.style.fontSize = '70px';
-          testLower.style.fontSize = '70px';
+          testUpper.style.fontSize = `${baseSplitSize}px`;
+          testLower.style.fontSize = `${baseSplitSize}px`;
           const totalW = testDiv.offsetWidth;
           document.body.removeChild(testDiv);
 
           if (totalW > targetWidth && totalW > 0) {
               const scale = targetWidth / (totalW + 20); // 20px余裕を持たせて見切れ防止
-              const newSize = Math.max(10, Math.floor(70 * scale));
+              const newSize = Math.max(10, Math.floor(baseSplitSize * scale));
               partUpper.style.fontSize = `${newSize}px`;
               partLower.style.fontSize = `${newSize}px`;
           } else {
-              partUpper.style.fontSize = '70px';
-              partLower.style.fontSize = '70px';
+              partUpper.style.fontSize = `${baseSplitSize}px`;
+              partLower.style.fontSize = `${baseSplitSize}px`;
           }
 
       } else {
@@ -811,7 +834,7 @@ function limitComments() {
               left: -9999px;
               visibility: hidden;
               white-space: nowrap;
-              font-size: 70px;
+              font-size: ${baseNormalSize}px;
               font-weight: bold;
           `;
           testDiv.textContent = element.textContent;
@@ -821,10 +844,10 @@ function limitComments() {
 
           if (textW > targetWidth && textW > 0) {
               const scale = targetWidth / textW;
-              const newSize = Math.max(10, Math.floor(70 * scale));
+              const newSize = Math.max(10, Math.floor(baseNormalSize * scale));
               element.style.fontSize = `${newSize}px`;
           } else {
-              element.style.fontSize = '70px';
+              element.style.fontSize = `${baseNormalSize}px`;
           }
       }
   }
@@ -923,6 +946,7 @@ function limitComments() {
     // ▲ここまで▲
 
     const commentType = commentTypeSelect.value;
+    const commentSize = commentSizeSelect.value;
     const now = Date.now();
 
     if (!name || !text) {
@@ -1011,6 +1035,7 @@ if (predefinedColorSelect.value === 'rainbow') {
     text,
     color: selectedColorValue,
     type: commentType,
+    size: commentSize,
     reactions: 0,
     reactedUsers: {},
     parent: null,
@@ -1026,6 +1051,7 @@ if (predefinedColorSelect.value === 'rainbow') {
             text: text,
             color: selectedColorValue,
             type: commentType,
+            size: commentSize,
             reactions: 0,
             reactedUsers: {},
             parent: null,
@@ -1124,6 +1150,11 @@ if (predefinedColorSelect.value === 'rainbow') {
 
     // カラーピッカーの値が変更されたときにも保存
     commentColorPicker.addEventListener('input', () => {
+        saveSettingsToLocalStorage();
+    });
+
+    // 文字サイズが変更されたときにも保存
+    commentSizeSelect.addEventListener('change', () => {
         saveSettingsToLocalStorage();
     });
 
@@ -1718,9 +1749,9 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
         // フローティング表示より先にキューに積んで遅延を最小化
         enqueueSpeech(data.text, data.color);
         if (data.type === 'center_fixed') {
-            showCenterFixedComment(key, data.text, data.color, data.timestamp);
+            showCenterFixedComment(key, data.text, data.color, data.timestamp, false, data.size || 'medium');
         } else {
-            showFloatingComment(key, data.text, data.color, data.timestamp);
+            showFloatingComment(key, data.text, data.color, data.timestamp, false, data.size || 'medium');
         }
     }
 } // ここで関数全体が閉じます
@@ -2067,6 +2098,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
         const name = (t.name || '匿名').replace(/\r?\n/g, ' ');
         const colorTag = t.color || '#ffffff';
         const typeTag  = t.type  || 'normal';
+        const sizeTag  = t.size  || 'medium';
         let content = '';
         if (t.text && t.text.startsWith('__SPLIT__')) {
             const parts = t.text.replace('__SPLIT__', '').split('\n');
@@ -2076,7 +2108,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
         } else {
             content = (t.text || '').replace(/\r?\n/g, ' ');
         }
-        return `#${num} [${dt}] ${name}: ${content} |color:${colorTag}|type:${typeTag}`;
+        return `#${num} [${dt}] ${name}: ${content} |color:${colorTag}|type:${typeTag}|size:${sizeTag}`;
     });
 
     const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
@@ -2360,6 +2392,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       nicknameInput.disabled = !enabled;
       commentInput.disabled = !enabled;
       commentTypeSelect.disabled = !enabled;
+      commentSizeSelect.disabled = !enabled;
       predefinedColorSelect.disabled = !enabled;
       commentColorPicker.disabled = !enabled;
       submitButton.disabled = !enabled;
@@ -2429,9 +2462,11 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
     const color = commentColorPicker.value;
     const predefinedColor = predefinedColorSelect.value;
     const commentType = commentTypeSelect.value;
+    const commentSize = commentSizeSelect.value;
 
     localStorage.setItem('userNickname', nickname);
     localStorage.setItem('commentType', commentType);
+    localStorage.setItem('commentSize', commentSize);
 
     if (predefinedColor === 'rainbow') {
         localStorage.setItem('commentColorType', 'rainbow');
@@ -2444,6 +2479,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
      function loadSettingsFromLocalStorage() {
     const savedNickname = localStorage.getItem('userNickname');
     const savedType = localStorage.getItem('commentType');
+    const savedSize = localStorage.getItem('commentSize');
     const savedColorType = localStorage.getItem('commentColorType');
     const savedColor = localStorage.getItem('commentColor');
 
@@ -2453,6 +2489,10 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
 
     if (savedType) {
         commentTypeSelect.value = savedType;
+    }
+
+    if (savedSize) {
+        commentSizeSelect.value = savedSize;
     }
 
     if (savedColorType === 'rainbow') {
