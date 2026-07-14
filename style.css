@@ -802,7 +802,7 @@ body.rainbow-anim-off .rainbow-char:nth-child(6n+5) { color: #0000FF !important;
 body.rainbow-anim-off .rainbow-char:nth-child(6n+6) { color: #BF00FF !important; }
 
 .rainbow-char {
-    display: inline-block;
+    display: inline;
     color: #FF0000;
     animation: explicit-rainbow-cycle 1s linear infinite;
 }
