@@ -819,6 +819,20 @@ body.rainbow-anim-off .rainbow-char:nth-child(6n+6) { color: #BF00FF !important;
     line-height: 1.35;
 }
 
+/* 投稿ログ（tweetStream）側の文字サイズ（小・中・大） */
+.tweet-text-content.size-small { font-size: 20px; }
+.tweet-text-content.size-medium { font-size: 30px; }
+.tweet-text-content.size-large { font-size: 42px; }
+
+.tweet-text-content.size-small .part-upper,
+.tweet-text-content.size-small .part-lower {
+    font-size: 21px !important;
+}
+.tweet-text-content.size-large .part-upper,
+.tweet-text-content.size-large .part-lower {
+    font-size: 44px !important;
+}
+
 
 /* =============================================================
    10. 5000兆円フォント
