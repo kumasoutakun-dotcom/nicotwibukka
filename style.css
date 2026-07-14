@@ -128,6 +128,30 @@ body.comment-only #concurrentUsers { display: none; }
     max-width: 90%;
 }
 
+/* =============================================================
+   文字サイズ（小・中・大）
+   ・center-fixed は adjustCenterFixedCommentFontSize() 側で
+     data-size を見て縮小フィッティングの基準値を変えるため、
+     ここでは主に floating-comment 側の表示に効く
+   ============================================================= */
+.floating-comment.size-small { font-size: 43px; }
+.floating-comment.size-medium { font-size: 72px; }
+.floating-comment.size-large { font-size: 101px; }
+
+.center-fixed-comment.size-small { font-size: 43px; }
+.center-fixed-comment.size-medium { font-size: 72px; }
+.center-fixed-comment.size-large { font-size: 101px; }
+
+/* 五千兆円（split-special）の上下段も文字サイズに応じてスケール */
+.floating-comment.size-small .part-upper,
+.floating-comment.size-small .part-lower {
+    font-size: 30px !important;
+}
+.floating-comment.size-large .part-upper,
+.floating-comment.size-large .part-lower {
+    font-size: 70px !important;
+}
+
 
 /* =============================================================
    3. オーバーレイUI（トグルボタン・ログ・同接数）
