@@ -1679,7 +1679,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
     <div class="tweet-header">
         <strong>#${currentTweetNumber} @${displayUserName}</strong>
     </div>
-    <div class="tweet-text-content" ${pStyle}>${commentContentHtml}</div>
+    <div class="tweet-text-content size-${data.size || 'medium'}" ${pStyle}>${commentContentHtml}</div>
     <div class="log-actions" style="display: ${isOverFlow ? 'flex' : 'none'};">
         <button class="toggle-log-btn">もっと見る</button>
     </div>
