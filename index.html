@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>nicotwi物化 ver1.7.5</title>
+  <title>nicotwi物化 ver1.7.6</title>
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="style.css">
 
@@ -25,7 +25,7 @@
             </div>
             <div id="toggleRainbowContainer">
                 <input type="checkbox" id="toggleRainbowCheckbox">
-                <label for="toggleRainbowCheckbox">🌈 虹色ｱﾆﾒｰｼｮﾝ</label>
+                <label for="toggleRainbowCheckbox">🌈 虹色アニメ</label>
             </div>
             
             <div id="logContainer"></div>
@@ -35,7 +35,7 @@
             <div id="headerSection">
                 <h1>nicotwi物化</h1>
                 <div id="topUsers">
-                    <h3>直近100件の投稿者　3選</h3>
+                    <h3>直近100件の投稿者数　3選</h3>
                     <ul id="topUserList">
                         <li id="top-rank-1">1位: ―</li>
                         <li id="top-rank-2">2位: ―</li>
@@ -61,6 +61,12 @@
         <select id="commentType">
             <option value="normal" selected>通常コメント</option>
             <option value="center_fixed">中央に固定表示 (20秒)</option>
+        </select>
+
+        <select id="commentSize">
+            <option value="small">小</option>
+            <option value="medium" selected>中</option>
+            <option value="large">大</option>
         </select>
         
         <select id="predefinedColor">
