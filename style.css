@@ -794,12 +794,12 @@ button:disabled {
 body.rainbow-anim-off .rainbow-char {
     animation: none !important;
 }
-body.rainbow-anim-off .rainbow-char:nth-child(6n+1) { color: #FF0000 !important; }
-body.rainbow-anim-off .rainbow-char:nth-child(6n+2) { color: #FF7F00 !important; }
-body.rainbow-anim-off .rainbow-char:nth-child(6n+3) { color: #FFFF00 !important; }
-body.rainbow-anim-off .rainbow-char:nth-child(6n+4) { color: #00FF00 !important; }
-body.rainbow-anim-off .rainbow-char:nth-child(6n+5) { color: #0000FF !important; }
-body.rainbow-anim-off .rainbow-char:nth-child(6n+6) { color: #BF00FF !important; }
+body.rainbow-anim-off .rainbow-char:nth-of-type(6n+1) { color: #FF0000 !important; }
+body.rainbow-anim-off .rainbow-char:nth-of-type(6n+2) { color: #FF7F00 !important; }
+body.rainbow-anim-off .rainbow-char:nth-of-type(6n+3) { color: #FFFF00 !important; }
+body.rainbow-anim-off .rainbow-char:nth-of-type(6n+4) { color: #00FF00 !important; }
+body.rainbow-anim-off .rainbow-char:nth-of-type(6n+5) { color: #0000FF !important; }
+body.rainbow-anim-off .rainbow-char:nth-of-type(6n+6) { color: #BF00FF !important; }
 
 .rainbow-char {
     display: inline-block;
@@ -986,4 +986,3 @@ body.rainbow-anim-off .rainbow-char:nth-child(6n+6) { color: #BF00FF !important;
     text-align: center;
     min-height: 1.2em;
 }
-
