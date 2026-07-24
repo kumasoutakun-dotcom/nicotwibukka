@@ -1023,9 +1023,9 @@ if (predefinedColorSelect.value === 'rainbow') {
     selectedColorValue = predefinedColorSelect.value;
 }
 
-    // ▼ 引用機能: 本文中の「@数字」を引用元tweetNumberとして検出 ▼
+    // ▼ 引用機能: 本文中の「#数字」を引用元tweetNumberとして検出 ▼
     let quoteTweetNumber = null;
-    const quoteMatch = text.match(/@(\d+)/);
+    const quoteMatch = text.match(/#(\d+)/);
     if (quoteMatch) {
         quoteTweetNumber = parseInt(quoteMatch[1], 10);
     }
@@ -1689,7 +1689,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
 
     div.innerHTML = `
     <div class="tweet-header">
-        <strong>#${currentTweetNumber} @${displayUserName}</strong>
+        <strong><span class="quote-number" onclick="insertQuoteIntoForm(${currentTweetNumber})" title="この投稿を引用">#${currentTweetNumber}</span> @${displayUserName}</strong>
     </div>
     ${quoteCardHtml}
     <div class="tweet-text-content size-${data.size || 'medium'}" ${pStyle}>${commentContentHtml}</div>
@@ -1701,6 +1701,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
             <button class="reaction-btn" style="color: ${reacted ? '#87CEEB' : '#ccc'};" ${isAnonymousPost ? 'disabled' : ''}>
                 👍️ ${reactionCount}
             </button>
+            <button type="button" class="requote-btn" onclick="insertQuoteIntoForm(${currentTweetNumber})" title="この投稿を引用">🔄</button>
         </div>
         <div class="timestamp">${formattedTime}</div>
     </div>
@@ -1775,11 +1776,11 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
 
   // ▼ 引用機能（quote）のヘルパー関数群 ▼
 
-  // 本文中の「@数字」をクリック可能な引用リンクに変換する（サニタイズ済みテキストに対して使用）
+  // 本文中の「#数字」をクリック可能な引用リンクに変換する（サニタイズ済みテキストに対して使用）
   function linkifyMentions(html) {
       if (!html) return html;
-      return html.replace(/@(\d+)/g, (match, num) => {
-          return `<span class="quote-mention" data-quote-number="${num}" onclick="jumpToTweetByNumber(${num})">@${num}</span>`;
+      return html.replace(/#(\d+)/g, (match, num) => {
+          return `<span class="quote-mention" data-quote-number="${num}" onclick="jumpToTweetByNumber(${num})">#${num}</span>`;
       });
   }
 
@@ -1830,6 +1831,23 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       targetDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
       targetDiv.classList.add('quote-jump-highlight');
       setTimeout(() => targetDiv.classList.remove('quote-jump-highlight'), 1500);
+  }
+
+  // 投稿フォームに「#番号 」を書き入れて、引用投稿をしやすくする
+  function insertQuoteIntoForm(tweetNumber) {
+      const splitContainer = document.getElementById('splitInputContainer');
+      const isSplitMode = splitContainer && splitContainer.style.display !== 'none';
+      const targetInput = isSplitMode ? document.getElementById('comment_part1') : document.getElementById('comment');
+      if (!targetInput) return;
+      const quoteTag = `#${tweetNumber} `;
+      if (!targetInput.value.startsWith(quoteTag)) {
+          targetInput.value = quoteTag + targetInput.value;
+      }
+      targetInput.focus();
+      const len = targetInput.value.length;
+      targetInput.setSelectionRange(len, len);
+      const formEl = document.getElementById('tweetForm');
+      if (formEl) formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   // ▲ここまで▲
 
