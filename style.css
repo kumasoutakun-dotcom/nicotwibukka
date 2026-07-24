@@ -607,6 +607,19 @@ button:disabled {
 .quote-jump-highlight {
     animation: quote-jump-flash 1.5s ease-out;
 }
+.quote-number {
+    cursor: pointer;
+}
+.quote-number:hover {
+    text-decoration: underline;
+    color: #7ab8f5;
+}
+.requote-btn {
+    margin-left: 10px;
+}
+.requote-btn:hover {
+    color: #7ab8f5 !important;
+}
 
 .tweet-header {
     display: flex;
