@@ -69,7 +69,7 @@
       loadingOverlay.classList.add('hidden');
   }
 
-  const THIS_HTML_VERSION_KEY = "v1.7.5"; // <-- ここ
+  const THIS_HTML_VERSION_KEY = "v1.7.7"; // <-- ここ
   let isCurrentVersion = false; // 現在のHTMLが最新バージョンかどうかを示すフラグ
   // --- ここまで ---
 
