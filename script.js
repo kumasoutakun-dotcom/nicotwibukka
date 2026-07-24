@@ -1,4 +1,4 @@
- const firebaseConfig = {
+  const firebaseConfig = {
     apiKey: "AIzaSyA5Bhf6p6zVjnKc9npB85fxG_1BBdUdGKY",
   authDomain: "nicotwibukka.firebaseapp.com",
   databaseURL: "https://nicotwibukka-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -69,7 +69,7 @@
       loadingOverlay.classList.add('hidden');
   }
 
-  const THIS_HTML_VERSION_KEY = "v1.7.6"; // <-- ここ
+  const THIS_HTML_VERSION_KEY = "v1.7.5"; // <-- ここ
   let isCurrentVersion = false; // 現在のHTMLが最新バージョンかどうかを示すフラグ
   // --- ここまで ---
 
@@ -1023,6 +1023,14 @@ if (predefinedColorSelect.value === 'rainbow') {
     selectedColorValue = predefinedColorSelect.value;
 }
 
+    // ▼ 引用機能: 本文中の「@数字」を引用元tweetNumberとして検出 ▼
+    let quoteTweetNumber = null;
+    const quoteMatch = text.match(/@(\d+)/);
+    if (quoteMatch) {
+        quoteTweetNumber = parseInt(quoteMatch[1], 10);
+    }
+    // ▲ここまで▲
+
         // 累計コメント番号をtransactionで取得（最小限の通信）
         let tweetNumber = 1;
         await totalTweetCountRef.transaction((current) => {
@@ -1039,6 +1047,7 @@ if (predefinedColorSelect.value === 'rainbow') {
     reactions: 0,
     reactedUsers: {},
     parent: null,
+    quote: quoteTweetNumber,
     timestamp: now,
     tweetNumber: tweetNumber,
     appVersion: THIS_HTML_VERSION_KEY
@@ -1055,6 +1064,7 @@ if (predefinedColorSelect.value === 'rainbow') {
             reactions: 0,
             reactedUsers: {},
             parent: null,
+            quote: quoteTweetNumber,
             timestamp: now,
             tweetNumber: tweetNumber,
             appVersion: THIS_HTML_VERSION_KEY
@@ -1093,11 +1103,11 @@ if (predefinedColorSelect.value === 'rainbow') {
     }
 }
 
-  form.addEventListener('submit', function(e) {
-    e.preventDefault(); 
-    submitTweet(); 
+  form.addEventListener('submit', function(e) {
+    e.preventDefault(); 
+    submitTweet(); 
 
-  });
+  });
 
 
   // リプレイパネルのイベント
@@ -1659,26 +1669,29 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
         // __SPLIT__フォーマットを投稿ストリーム用にHTMLに変換
         if (data.text && data.text.startsWith('__SPLIT__')) {
             const parts = data.text.replace('__SPLIT__', '').split('\n');
-            const p1 = DOMPurify.sanitize(parts[0] || '');
-            const p2 = DOMPurify.sanitize(parts[1] || '');
+            const p1 = linkifyMentions(DOMPurify.sanitize(parts[0] || ''));
+            const p2 = linkifyMentions(DOMPurify.sanitize(parts[1] || ''));
             commentContentHtml = `<div class="split-special"><span class="part-upper">${p1}</span><span class="part-lower">${p2}</span></div>`;
         } else {
-            commentContentHtml = sanitizedText;
+            commentContentHtml = linkifyMentions(sanitizedText);
         }
         pStyle = 'style="color: initial; overflow: visible;"';
     } else if (data.color === 'dot') {
-        commentContentHtml = sanitizedText;
+        commentContentHtml = linkifyMentions(sanitizedText);
         pStyle = 'style="color: #FFFFFF;"';
         div.classList.add('dot-font');
     } else {
-        commentContentHtml = sanitizedText;
+        commentContentHtml = linkifyMentions(sanitizedText);
         pStyle = `style="color: ${data.color || '#FFFFFF'};"`;
     }
+
+    const quoteCardHtml = data.quote ? `<div class="quote-card" data-quote-number="${data.quote}"><div class="quote-card-loading">読み込み中…</div></div>` : '';
 
     div.innerHTML = `
     <div class="tweet-header">
         <strong>#${currentTweetNumber} @${displayUserName}</strong>
     </div>
+    ${quoteCardHtml}
     <div class="tweet-text-content size-${data.size || 'medium'}" ${pStyle}>${commentContentHtml}</div>
     <div class="log-actions" style="display: ${isOverFlow ? 'flex' : 'none'};">
         <button class="toggle-log-btn">もっと見る</button>
@@ -1692,6 +1705,10 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
         <div class="timestamp">${formattedTime}</div>
     </div>
 `;
+
+    if (data.quote) {
+        renderQuoteCard(div, data.quote);
+    }
 
     updateTweetDisplay(div, data);
 
@@ -1755,6 +1772,66 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
         }
     }
 } // ここで関数全体が閉じます
+
+  // ▼ 引用機能（quote）のヘルパー関数群 ▼
+
+  // 本文中の「@数字」をクリック可能な引用リンクに変換する（サニタイズ済みテキストに対して使用）
+  function linkifyMentions(html) {
+      if (!html) return html;
+      return html.replace(/@(\d+)/g, (match, num) => {
+          return `<span class="quote-mention" data-quote-number="${num}" onclick="jumpToTweetByNumber(${num})">@${num}</span>`;
+      });
+  }
+
+  // 引用元投稿をFirebaseから取得し、投稿カード上部の引用カードに表示する
+  async function renderQuoteCard(div, quoteNumber) {
+      const cardEl = div.querySelector('.quote-card');
+      if (!cardEl) return;
+      try {
+          const snap = await db.ref('tweets').orderByChild('tweetNumber').equalTo(quoteNumber).limitToFirst(1).once('value');
+          const val = snap.val();
+          if (!val) {
+              cardEl.innerHTML = `<div class="quote-card-missing">@${quoteNumber} の投稿が見つかりません</div>`;
+              return;
+          }
+          const quotedKey = Object.keys(val)[0];
+          const quotedData = val[quotedKey];
+          const quotedName = (quotedData.name && quotedData.name.trim()) ? quotedData.name : '名無し';
+          let quotedRawText = quotedData.text || '';
+          if (quotedRawText.startsWith('__SPLIT__')) {
+              quotedRawText = quotedRawText.replace('__SPLIT__', '').replace('\n', ' ');
+          }
+          const quotedSanitized = DOMPurify.sanitize(quotedRawText);
+          const snippet = quotedSanitized.length > 40 ? quotedSanitized.substring(0, 40) + '…' : quotedSanitized;
+
+          cardEl.innerHTML = `<div class="quote-card-header">#${quoteNumber} @${quotedName}</div><div class="quote-card-body">${snippet}</div>`;
+          cardEl.classList.add('quote-card-clickable');
+          cardEl.addEventListener('click', () => jumpToTweetByNumber(quoteNumber));
+      } catch (e) {
+          console.error('引用元投稿の取得に失敗しました:', e);
+          cardEl.innerHTML = `<div class="quote-card-missing">@${quoteNumber} の投稿が見つかりません</div>`;
+      }
+  }
+
+  // 指定tweetNumberの投稿が「直近100件」の表示範囲内にあれば、その投稿までスクロールして移動する
+  function jumpToTweetByNumber(quoteNumber) {
+      let targetKey = null;
+      for (const k in allTweets) {
+          if (allTweets[k] && Number(allTweets[k].tweetNumber) === Number(quoteNumber)) {
+              targetKey = k;
+              break;
+          }
+      }
+      const targetDiv = targetKey ? (tweetDomCache.get(targetKey) || document.querySelector(`.tweet[data-key="${targetKey}"]`)) : null;
+      if (!targetDiv) {
+          alert(`元投稿（#${quoteNumber}）は直近100件の表示範囲外のため移動できません。`);
+          return;
+      }
+      targetDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      targetDiv.classList.add('quote-jump-highlight');
+      setTimeout(() => targetDiv.classList.remove('quote-jump-highlight'), 1500);
+  }
+  // ▲ここまで▲
 
   // DOMとコメント管理マップからツイートを削除するヘルパー関数
   function removeTweetFromDOMAndMaps(key) {
@@ -1976,13 +2053,13 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
     });
     hideLoading();
 
-    // child_changed リスナー
-    db.ref('tweets').on('child_changed', async (snapshot) => {
-      await incrementReadCount();
+    // child_changed リスナー
+    db.ref('tweets').on('child_changed', async (snapshot) => {
+      await incrementReadCount();
 
-      const key = snapshot.key;
-      const data = snapshot.val();
-      allTweets[key] = data; // allTweets の既存ツイートを更新
+      const key = snapshot.key;
+      const data = snapshot.val();
+      allTweets[key] = data; // allTweets の既存ツイートを更新
 
 
 
@@ -2000,56 +2077,56 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
           appendTweetToStream(key, data, null, false);
       }
       updateUserStats();
-    }, (error) => {
-      console.error("child_changed リスナーでエラー:", error);
-    });
+    }, (error) => {
+      console.error("child_changed リスナーでエラー:", error);
+    });
 
 
-    // --- ↓ ここから元のコードで setupRealtimeListeners の外に出ていた部分を中に移動 ↓ ---
-    // child_removed リスナー
-    db.ref('tweets').on('child_removed', async (snapshot) => {
-      await incrementReadCount();
+    // --- ↓ ここから元のコードで setupRealtimeListeners の外に出ていた部分を中に移動 ↓ ---
+    // child_removed リスナー
+    db.ref('tweets').on('child_removed', async (snapshot) => {
+      await incrementReadCount();
 
-      const key = snapshot.key;
-      removeTweetFromDOMAndMaps(key);
-      delete allTweets[key];
+      const key = snapshot.key;
+      removeTweetFromDOMAndMaps(key);
+      delete allTweets[key];
       updateUserStats();
       // 番号はdata.tweetNumberを使うため振り直し不要
-    }, (error) => {
-      console.error("child_removed リスナーでエラー:", error);
-    });
-    console.log("DEBUG: child_removed リスナーを設定しました。");
+    }, (error) => {
+      console.error("child_removed リスナーでエラー:", error);
+    });
+    console.log("DEBUG: child_removed リスナーを設定しました。");
 
-    // presence 関連のロジック
-    const presenceRef = db.ref('presence');
-    const amOnline = db.ref('.info/connected');
+    // presence 関連のロジック
+    const presenceRef = db.ref('presence');
+    const amOnline = db.ref('.info/connected');
 
-    let userId = localStorage.getItem('firebaseUserId');
-    if (!userId) {
-      userId = db.ref().push().key;
-      localStorage.setItem('firebaseUserId', userId);
-    }
-    const userPresenceRef = presenceRef.child(userId);
+    let userId = localStorage.getItem('firebaseUserId');
+    if (!userId) {
+      userId = db.ref().push().key;
+      localStorage.setItem('firebaseUserId', userId);
+    }
+    const userPresenceRef = presenceRef.child(userId);
 
-    amOnline.on('value', (snapshot) => {
-      if (snapshot.val()) {
-        userPresenceRef.onDisconnect().remove();
+    amOnline.on('value', (snapshot) => {
+      if (snapshot.val()) {
+        userPresenceRef.onDisconnect().remove();
         userPresenceRef.set(true).catch(e => console.error("Failed to set presence:", e));
 
 
-      }
-    });
-    console.log("DEBUG: amOnline リスナーを設定しました。");
+      }
+    });
+    console.log("DEBUG: amOnline リスナーを設定しました。");
 
-    presenceRef.on('value', async (snapshot) => {
-      await incrementReadCount();
-      const count = snapshot.numChildren();
-      concurrentUsersDiv.textContent = `同接数: ${count}`;
-    }, (error) => {
-      console.error("presence リスナーでエラー:", error);
-    });
-    console.log("DEBUG: presenceRef リスナーを設定しました。");
-  }
+    presenceRef.on('value', async (snapshot) => {
+      await incrementReadCount();
+      const count = snapshot.numChildren();
+      concurrentUsersDiv.textContent = `同接数: ${count}`;
+    }, (error) => {
+      console.error("presence リスナーでエラー:", error);
+    });
+    console.log("DEBUG: presenceRef リスナーを設定しました。");
+  }
 
   function openExportModal() {
     const modal = document.getElementById('exportModal');
@@ -2593,3 +2670,4 @@ function toStaticRainbowText(text) {
         ">${p2}</span>
     </div>`;
 }
+
