@@ -1754,13 +1754,14 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
             
             const reactedUsers = (await reactedUsersRef.once('value')).val() || {};
             
+            let transactionResult;
             if (reactedUsers[currentUser]) {
                 // すでにいいねしている場合、取り消す
                 delete reactedUsers[currentUser];
                 await reactedUsersRef.set(reactedUsers);
                 
                 // いいね数をデクリメント
-                reactionsRef.transaction((currentCount) => {
+                transactionResult = await reactionsRef.transaction((currentCount) => {
                     return (currentCount || 0) - 1;
                 });
                 
@@ -1770,9 +1771,30 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
                 await reactedUsersRef.set(reactedUsers);
                 
                 // いいね数をインクリメント
-                reactionsRef.transaction((currentCount) => {
+                transactionResult = await reactionsRef.transaction((currentCount) => {
                     return (currentCount || 0) + 1;
                 });
+            }
+
+            // 話題タブ用インデックス(likedTweets)を最新のいいね数と一緒に同期する
+            // （👍が1件以上ある投稿だけをここに複製しておき、話題タブはクエリ1回で読めるようにする）
+            const newReactionCount = (transactionResult && transactionResult.snapshot && transactionResult.snapshot.val()) || 0;
+            if (newReactionCount > 0) {
+                db.ref('likedTweets/' + key).set({
+                    name: data.name,
+                    text: data.text,
+                    color: data.color,
+                    type: data.type,
+                    size: data.size,
+                    reactions: newReactionCount,
+                    reactedUsers: reactedUsers,
+                    timestamp: data.timestamp,
+                    tweetNumber: data.tweetNumber,
+                    quote: data.quote || null,
+                    appVersion: data.appVersion
+                });
+            } else {
+                db.ref('likedTweets/' + key).remove();
             }
         }; // ここでonclickのブロックが閉じます
     } // ここでif(reactionBtn)のブロックが閉じます
@@ -1819,16 +1841,42 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       }
   }
 
-  // 引用元投稿データから表示用の名前と本文抜粋を作る
-  function buildQuoteSnippet(quotedData) {
-      const quotedName = (quotedData.name && quotedData.name.trim()) ? quotedData.name : '名無し';
+  // 引用元投稿から、装飾を無視したプレーンテキストの抜粋を作る（流れるコメントの引用プレフィックス用）
+  function buildQuotePlainSnippet(quotedData) {
       let quotedRawText = quotedData.text || '';
       if (quotedRawText.startsWith('__SPLIT__')) {
           quotedRawText = quotedRawText.replace('__SPLIT__', '').replace('\n', ' ');
       }
       const quotedSanitized = DOMPurify.sanitize(quotedRawText);
-      const snippet = quotedSanitized.length > 40 ? quotedSanitized.substring(0, 40) + '…' : quotedSanitized;
-      return { name: quotedName, snippet };
+      return quotedSanitized.length > 40 ? quotedSanitized.substring(0, 40) + '…' : quotedSanitized;
+  }
+
+  function truncateForQuote(text, maxLen) {
+      return text.length > maxLen ? text.substring(0, maxLen) + '…' : text;
+  }
+
+  // 引用元投稿の色・フォント設定(rainbow/5000兆円/dot/カスタムカラー)を再現したHTMLを作る（引用カード表示用）
+  function buildQuoteCardContentHtml(quotedData) {
+      const rawText = quotedData.text || '';
+      const color = quotedData.color;
+      if ((color === '5000trillion' || color === 'split_custom') && rawText.startsWith('__SPLIT__')) {
+          const parts = rawText.replace('__SPLIT__', '').split('\n');
+          const p1 = truncateForQuote(DOMPurify.sanitize(parts[0] || ''), 20);
+          const p2 = truncateForQuote(DOMPurify.sanitize(parts[1] || ''), 20);
+          return `<div class="split-special"><span class="part-upper">${p1}</span><span class="part-lower">${p2}</span></div>`;
+      }
+      const sanitized = DOMPurify.sanitize(rawText);
+      const snippet = truncateForQuote(sanitized, 40);
+      if (color === 'rainbow') {
+          return toRainbowText(snippet);
+      }
+      if (color === 'dot') {
+          return `<span class="dot-font">${snippet}</span>`;
+      }
+      if (color && /^#[0-9a-fA-F]{6}$/.test(color)) {
+          return `<span style="color: ${color};">${snippet}</span>`;
+      }
+      return snippet;
   }
 
   // 本文中の「#数字」をクリック可能な引用リンクに変換する（サニタイズ済みテキストに対して使用）
@@ -1842,14 +1890,25 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
   // 引用元投稿を取得し、投稿カード上部の引用カードに表示する
   async function renderQuoteCard(div, quoteNumber) {
       const cardEl = div.querySelector('.quote-card');
-      if (!cardEl) return;
       const found = await fetchQuotedTweetInfo(quoteNumber);
+
+      // 本文中の「#quoteNumber」を引用元の内容に置換する（クリックでのジャンプ機能はそのまま）
+      const mentionEls = div.querySelectorAll(`.quote-mention[data-quote-number="${quoteNumber}"]`);
+      if (found) {
+          const plainSnippet = buildQuotePlainSnippet(found.data);
+          mentionEls.forEach(el => {
+              el.textContent = `「${plainSnippet}」`;
+          });
+      }
+
+      if (!cardEl) return;
       if (!found) {
           cardEl.innerHTML = `<div class="quote-card-missing">#${quoteNumber} の投稿が見つかりません</div>`;
           return;
       }
-      const { name: quotedName, snippet } = buildQuoteSnippet(found.data);
-      cardEl.innerHTML = `<div class="quote-card-header">#${quoteNumber} @${quotedName}</div><div class="quote-card-body">${snippet}</div>`;
+      const quotedName = (found.data.name && found.data.name.trim()) ? found.data.name : '名無し';
+      const bodyHtml = buildQuoteCardContentHtml(found.data);
+      cardEl.innerHTML = `<div class="quote-card-header">#${quoteNumber} @${quotedName}</div><div class="quote-card-body">${bodyHtml}</div>`;
       cardEl.classList.add('quote-card-clickable');
       cardEl.addEventListener('click', () => jumpToTweetByNumber(quoteNumber));
   }
@@ -1860,7 +1919,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       if (!data.quote) return data.text;
       const found = await fetchQuotedTweetInfo(data.quote);
       if (!found) return data.text;
-      const { snippet } = buildQuoteSnippet(found.data);
+      const snippet = buildQuotePlainSnippet(found.data);
       const prefix = `#${data.quote}　${snippet}　`;
       const rawText = data.text || '';
       if (rawText.startsWith('__SPLIT__')) {
@@ -1994,6 +2053,132 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
     } catch (error) {
         console.error("初期データの読み込みに失敗しました:", error);
     }
+  }
+
+  // =============================================
+  // 新着／話題タブ切り替え
+  // =============================================
+  let currentFeedTab = 'new'; // 'new' | 'trend'
+  let likedTweetsQueryRef = null;
+
+  function stopLiveTweetListener() {
+      db.ref('tweets').off();
+      if (tweetsQueryRef) { tweetsQueryRef.off(); tweetsQueryRef = null; }
+  }
+
+  function stopTrendingLiveListener() {
+      db.ref('likedTweets').off();
+      if (likedTweetsQueryRef) { likedTweetsQueryRef.off(); likedTweetsQueryRef = null; }
+  }
+
+  async function switchFeedTab(tab) {
+      if (tab === currentFeedTab) return;
+      currentFeedTab = tab;
+
+      const tabNewBtn = document.getElementById('tabNewBtn');
+      const tabTrendBtn = document.getElementById('tabTrendBtn');
+      if (tabNewBtn) tabNewBtn.classList.toggle('active-tab', tab === 'new');
+      if (tabTrendBtn) tabTrendBtn.classList.toggle('active-tab', tab === 'trend');
+
+      stopLiveTweetListener();
+      stopTrendingLiveListener();
+      tweetStream.innerHTML = '';
+      tweetDomCache.clear();
+      allTweets = {};
+
+      if (tab === 'new') {
+          await loadInitialTweetsAndMonitorChanges();
+          setupRealtimeListeners();
+      } else {
+          await loadTrendingTweets();
+          setupTrendingRealtimeListeners();
+      }
+  }
+
+  // 話題タブ：likedTweets（👍が付いた投稿だけの索引）から新着順に最大100件を読み込む
+  async function loadTrendingTweets() {
+      showLoading('読み込み中…');
+      try {
+          const snapshot = await db.ref('likedTweets').orderByKey().limitToLast(100).once('value');
+          await incrementReadCount();
+          const data = snapshot.val() || {};
+          Object.assign(allTweets, data);
+          Object.keys(data).forEach((key, index) => {
+              appendTweetToStream(key, data[key], index + 1, false);
+          });
+          updateUserStats();
+      } catch (error) {
+          console.error("話題タブの読み込みに失敗しました:", error);
+      } finally {
+          hideLoading();
+      }
+  }
+
+  // 話題タブのライブ更新（新しく👍が付いた投稿の追加・いいね数の変化・0件に戻った投稿の削除）
+  function setupTrendingRealtimeListeners() {
+      stopTrendingLiveListener();
+
+      const loadedKeys = Object.keys(allTweets).sort((a, b) => parseInt(a) - parseInt(b));
+      const lastLoadedKey = loadedKeys.length > 0 ? loadedKeys[loadedKeys.length - 1] : null;
+      likedTweetsQueryRef = lastLoadedKey
+          ? db.ref('likedTweets').orderByKey().startAfter(lastLoadedKey)
+          : db.ref('likedTweets').orderByKey();
+
+      likedTweetsQueryRef.on('child_added', async (snapshot) => {
+          if (currentFeedTab !== 'trend') return;
+          await incrementReadCount();
+          const key = snapshot.key;
+          const data = snapshot.val();
+          allTweets[key] = data;
+          appendTweetToStream(key, data, null, false);
+
+          while (tweetStream.children.length > 100) {
+              let oldest = tweetStream.lastElementChild;
+              if (oldest && oldest.getAttribute('data-key') === protectedTweetKey) {
+                  oldest = oldest.previousElementSibling;
+                  if (!oldest) break;
+              }
+              const oldestKey = oldest.getAttribute('data-key');
+              oldest.remove();
+              delete allTweets[oldestKey];
+          }
+          updateUserStats();
+      }, (error) => {
+          console.error("話題タブ child_added リスナーでエラー:", error);
+      });
+
+      db.ref('likedTweets').on('child_changed', async (snapshot) => {
+          if (currentFeedTab !== 'trend') return;
+          await incrementReadCount();
+          const key = snapshot.key;
+          const data = snapshot.val();
+          allTweets[key] = data;
+          const cachedDiv = tweetDomCache.get(key);
+          if (cachedDiv) {
+              const btn = cachedDiv.querySelector('.reaction-btn');
+              if (btn) {
+                  const reacted = data.reactedUsers && data.reactedUsers[currentUser];
+                  btn.style.color = reacted ? '#87CEEB' : '#ccc';
+                  btn.textContent = '👍️ ' + (data.reactions || 0);
+              }
+          } else {
+              appendTweetToStream(key, data, null, false);
+          }
+          updateUserStats();
+      }, (error) => {
+          console.error("話題タブ child_changed リスナーでエラー:", error);
+      });
+
+      db.ref('likedTweets').on('child_removed', async (snapshot) => {
+          if (currentFeedTab !== 'trend') return;
+          await incrementReadCount();
+          const key = snapshot.key;
+          removeTweetFromDOMAndMaps(key);
+          delete allTweets[key];
+          updateUserStats();
+      }, (error) => {
+          console.error("話題タブ child_removed リスナーでエラー:", error);
+      });
   }
 
   // =============================================
