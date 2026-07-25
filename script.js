@@ -433,7 +433,7 @@ function limitComments() {
     }
 
     let idx = 0;
-    function playNext() {
+    async function playNext() {
         if (idx >= entries.length) {
             status.textContent = `再現完了 (tweetナンバー${from}〜${to}、${entries.length}件)`;
             stopReplay();
@@ -445,7 +445,8 @@ function limitComments() {
             if (data.type === 'center_fixed') {
                 showCenterFixedComment(key + '_r' + idx, data.text, data.color, Date.now(), true, data.size || 'medium');
             } else {
-                showFloatingCommentReplay(key + '_r' + idx, data.text, data.color, data.size || 'medium');
+                const quotedText = await buildFloatingTextWithQuote(data);
+                showFloatingCommentReplay(key + '_r' + idx, quotedText, data.color, data.size || 'medium');
             }
         }
         idx++;
@@ -1038,7 +1039,7 @@ if (predefinedColorSelect.value === 'rainbow') {
             return tweetNumber;
         });
 
-        console.log({
+ console.log({
     name,
     text,
     color: selectedColorValue,
@@ -1768,6 +1769,10 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
         enqueueSpeech(data.text, data.color);
         if (data.type === 'center_fixed') {
             showCenterFixedComment(key, data.text, data.color, data.timestamp, false, data.size || 'medium');
+        } else if (data.quote) {
+            buildFloatingTextWithQuote(data).then(quotedText => {
+                showFloatingComment(key, quotedText, data.color, data.timestamp, false, data.size || 'medium');
+            });
         } else {
             showFloatingComment(key, data.text, data.color, data.timestamp, false, data.size || 'medium');
         }
@@ -1775,6 +1780,40 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
 } // ここで関数全体が閉じます
 
   // ▼ 引用機能（quote）のヘルパー関数群 ▼
+
+  // 指定tweetNumberの投稿情報を取得する。まず直近100件のローカルキャッシュ(allTweets)を探し、
+  // 無ければFirebaseに問い合わせる（タイムアウト付き。リロード直後の「読み込み中」固まり対策）
+  async function fetchQuotedTweetInfo(quoteNumber) {
+      for (const k in allTweets) {
+          if (allTweets[k] && Number(allTweets[k].tweetNumber) === Number(quoteNumber)) {
+              return { key: k, data: allTweets[k] };
+          }
+      }
+      try {
+          const queryPromise = db.ref('tweets').orderByChild('tweetNumber').equalTo(quoteNumber).limitToFirst(1).once('value');
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('quote fetch timeout')), 5000));
+          const snap = await Promise.race([queryPromise, timeoutPromise]);
+          const val = snap.val();
+          if (!val) return null;
+          const quotedKey = Object.keys(val)[0];
+          return { key: quotedKey, data: val[quotedKey] };
+      } catch (e) {
+          console.error('引用元投稿の取得に失敗しました:', e);
+          return null;
+      }
+  }
+
+  // 引用元投稿データから表示用の名前と本文抜粋を作る
+  function buildQuoteSnippet(quotedData) {
+      const quotedName = (quotedData.name && quotedData.name.trim()) ? quotedData.name : '名無し';
+      let quotedRawText = quotedData.text || '';
+      if (quotedRawText.startsWith('__SPLIT__')) {
+          quotedRawText = quotedRawText.replace('__SPLIT__', '').replace('\n', ' ');
+      }
+      const quotedSanitized = DOMPurify.sanitize(quotedRawText);
+      const snippet = quotedSanitized.length > 40 ? quotedSanitized.substring(0, 40) + '…' : quotedSanitized;
+      return { name: quotedName, snippet };
+  }
 
   // 本文中の「#数字」をクリック可能な引用リンクに変換する（サニタイズ済みテキストに対して使用）
   function linkifyMentions(html) {
@@ -1784,34 +1823,36 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       });
   }
 
-  // 引用元投稿をFirebaseから取得し、投稿カード上部の引用カードに表示する
+  // 引用元投稿を取得し、投稿カード上部の引用カードに表示する
   async function renderQuoteCard(div, quoteNumber) {
       const cardEl = div.querySelector('.quote-card');
       if (!cardEl) return;
-      try {
-          const snap = await db.ref('tweets').orderByChild('tweetNumber').equalTo(quoteNumber).limitToFirst(1).once('value');
-          const val = snap.val();
-          if (!val) {
-              cardEl.innerHTML = `<div class="quote-card-missing">@${quoteNumber} の投稿が見つかりません</div>`;
-              return;
-          }
-          const quotedKey = Object.keys(val)[0];
-          const quotedData = val[quotedKey];
-          const quotedName = (quotedData.name && quotedData.name.trim()) ? quotedData.name : '名無し';
-          let quotedRawText = quotedData.text || '';
-          if (quotedRawText.startsWith('__SPLIT__')) {
-              quotedRawText = quotedRawText.replace('__SPLIT__', '').replace('\n', ' ');
-          }
-          const quotedSanitized = DOMPurify.sanitize(quotedRawText);
-          const snippet = quotedSanitized.length > 40 ? quotedSanitized.substring(0, 40) + '…' : quotedSanitized;
-
-          cardEl.innerHTML = `<div class="quote-card-header">#${quoteNumber} @${quotedName}</div><div class="quote-card-body">${snippet}</div>`;
-          cardEl.classList.add('quote-card-clickable');
-          cardEl.addEventListener('click', () => jumpToTweetByNumber(quoteNumber));
-      } catch (e) {
-          console.error('引用元投稿の取得に失敗しました:', e);
-          cardEl.innerHTML = `<div class="quote-card-missing">@${quoteNumber} の投稿が見つかりません</div>`;
+      const found = await fetchQuotedTweetInfo(quoteNumber);
+      if (!found) {
+          cardEl.innerHTML = `<div class="quote-card-missing">#${quoteNumber} の投稿が見つかりません</div>`;
+          return;
       }
+      const { name: quotedName, snippet } = buildQuoteSnippet(found.data);
+      cardEl.innerHTML = `<div class="quote-card-header">#${quoteNumber} @${quotedName}</div><div class="quote-card-body">${snippet}</div>`;
+      cardEl.classList.add('quote-card-clickable');
+      cardEl.addEventListener('click', () => jumpToTweetByNumber(quoteNumber));
+  }
+
+  // 引用付き投稿を流れる/中央固定コメントとして表示する際の本文を組み立てる
+  // 「#番号　引用元本文　投稿本文」の形にする（__SPLIT__＝五千兆円フォーマットの場合は前半に差し込む）
+  async function buildFloatingTextWithQuote(data) {
+      if (!data.quote) return data.text;
+      const found = await fetchQuotedTweetInfo(data.quote);
+      if (!found) return data.text;
+      const { snippet } = buildQuoteSnippet(found.data);
+      const prefix = `#${data.quote}　${snippet}　`;
+      const rawText = data.text || '';
+      if (rawText.startsWith('__SPLIT__')) {
+          const parts = rawText.replace('__SPLIT__', '').split('\n');
+          const newPart1 = prefix + (parts[0] || '');
+          return `__SPLIT__${newPart1}\n${parts[1] || ''}`;
+      }
+      return prefix + rawText;
   }
 
   // 指定tweetNumberの投稿が「直近100件」の表示範囲内にあれば、その投稿までスクロールして移動する
