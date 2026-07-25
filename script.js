@@ -105,6 +105,18 @@
   const tweetDomCache = new Map(); // key → DOM要素キャッシュ // child_addedクエリ参照（off()用） // 全ツイートデータのキャッシュ
   let userRecentPosts = {}; 
   let userLastPostTime = {}; // 各ユーザーの最終投稿時刻を記録する
+
+  // 引用ジャンプで直近移動した投稿のキー。新着投稿による100件超過削除から一時的に保護する
+  let protectedTweetKey = null;
+  let protectedTweetTimer = null;
+  function protectTweetFromEviction(key) {
+      protectedTweetKey = key;
+      if (protectedTweetTimer) clearTimeout(protectedTweetTimer);
+      protectedTweetTimer = setTimeout(() => {
+          protectedTweetKey = null;
+          protectedTweetTimer = null;
+      }, 8000); // 8秒間はジャンプ先の投稿を新着による自動削除から守る
+  }
   
   let currentReadCount = 0; 
   let currentWriteCount = 0; 
@@ -1039,7 +1051,7 @@ if (predefinedColorSelect.value === 'rainbow') {
             return tweetNumber;
         });
 
- console.log({
+        console.log({
     name,
     text,
     color: selectedColorValue,
@@ -1791,7 +1803,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       }
       try {
           const queryPromise = db.ref('tweets').orderByChild('tweetNumber').equalTo(quoteNumber).limitToFirst(1).once('value');
-          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('quote fetch timeout')), 5000));
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('quote fetch timeout')), 8000));
           const snap = await Promise.race([queryPromise, timeoutPromise]);
           const val = snap.val();
           if (!val) return null;
@@ -1871,6 +1883,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       }
       targetDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
       targetDiv.classList.add('quote-jump-highlight');
+      protectTweetFromEviction(targetKey);
       setTimeout(() => targetDiv.classList.remove('quote-jump-highlight'), 1500);
   }
 
@@ -2097,7 +2110,12 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       if (totalCount >= 100) {
           // 100件以上：古いものをDOMとallTweetsから除去してからランキング更新
           while (tweetStream.children.length > 100) {
-              const oldest = tweetStream.lastElementChild;
+              let oldest = tweetStream.lastElementChild;
+              // 引用ジャンプで直前に見に来た投稿は一時的に削除保護し、代わりにその一つ前を消す
+              if (oldest && oldest.getAttribute('data-key') === protectedTweetKey) {
+                  oldest = oldest.previousElementSibling;
+                  if (!oldest) break;
+              }
               const oldestKey = oldest.getAttribute('data-key');
               oldest.remove();
               delete allTweets[oldestKey];
