@@ -569,6 +569,7 @@ button:disabled {
     flex: 1;
     padding: 8px 0;
     font-size: 22px;
+    font-family: 'k8x12S', sans-serif;
     background: #10283d;
     color: #ccc;
     border: none;

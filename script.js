@@ -1781,17 +1781,17 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
             const newReactionCount = (transactionResult && transactionResult.snapshot && transactionResult.snapshot.val()) || 0;
             if (newReactionCount > 0) {
                 db.ref('likedTweets/' + key).set({
-                    name: data.name,
-                    text: data.text,
-                    color: data.color,
-                    type: data.type,
-                    size: data.size,
+                    name: data.name || null,
+                    text: data.text || null,
+                    color: data.color || null,
+                    type: data.type || null,
+                    size: data.size || null,
                     reactions: newReactionCount,
-                    reactedUsers: reactedUsers,
-                    timestamp: data.timestamp,
-                    tweetNumber: data.tweetNumber,
+                    reactedUsers: reactedUsers || null,
+                    timestamp: data.timestamp || null,
+                    tweetNumber: data.tweetNumber || null,
                     quote: data.quote || null,
-                    appVersion: data.appVersion
+                    appVersion: data.appVersion || null
                 });
             } else {
                 db.ref('likedTweets/' + key).remove();
