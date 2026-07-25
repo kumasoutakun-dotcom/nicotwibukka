@@ -604,6 +604,7 @@ button:disabled {
     overflow-wrap: anywhere;
     max-height: 4.5em;
     overflow: hidden;
+    font-family: 'GenZenGothicKaiC', sans-serif !important; /* 引用元(投稿)のdot-fontを継承しないようリセット */
 }
 .quote-card .part-upper,
 .quote-card .part-lower {
