@@ -1083,6 +1083,9 @@ if (predefinedColorSelect.value === 'rainbow') {
             appVersion: THIS_HTML_VERSION_KEY
         });
 
+        // 引用機能用: tweetNumber→key の対応をquoteIndexに保存（クエリ無しで直接参照できるようにする）
+        db.ref('quoteIndex/' + tweetNumber).set(newTweetKey);
+
         // 書き込みカウントを別途更新
         await db.ref('usageStats/writeCount').set(currentWriteCount + 1);
         currentWriteCount++;
@@ -1794,7 +1797,8 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
   // ▼ 引用機能（quote）のヘルパー関数群 ▼
 
   // 指定tweetNumberの投稿情報を取得する。まず直近100件のローカルキャッシュ(allTweets)を探し、
-  // 無ければFirebaseに問い合わせる（タイムアウト付き。リロード直後の「読み込み中」固まり対策）
+  // 無ければquoteIndex(tweetNumber→key)を直接パス読み取りしてから該当投稿を直接パス読み取りする。
+  // orderByChildのクエリは使わないため、インデックス未設定でも全件ダウンロードは発生しない。
   async function fetchQuotedTweetInfo(quoteNumber) {
       for (const k in allTweets) {
           if (allTweets[k] && Number(allTweets[k].tweetNumber) === Number(quoteNumber)) {
@@ -1802,13 +1806,13 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
           }
       }
       try {
-          const queryPromise = db.ref('tweets').orderByChild('tweetNumber').equalTo(quoteNumber).limitToFirst(1).once('value');
-          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('quote fetch timeout')), 8000));
-          const snap = await Promise.race([queryPromise, timeoutPromise]);
-          const val = snap.val();
-          if (!val) return null;
-          const quotedKey = Object.keys(val)[0];
-          return { key: quotedKey, data: val[quotedKey] };
+          const indexSnap = await db.ref('quoteIndex/' + quoteNumber).once('value');
+          const quotedKey = indexSnap.val();
+          if (!quotedKey) return null; // quoteIndexに無い（移行前の古い投稿など）
+          const tweetSnap = await db.ref('tweets/' + quotedKey).once('value');
+          const tweetData = tweetSnap.val();
+          if (!tweetData) return null;
+          return { key: quotedKey, data: tweetData };
       } catch (e) {
           console.error('引用元投稿の取得に失敗しました:', e);
           return null;
