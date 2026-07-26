@@ -544,6 +544,12 @@ select#commentSize {
     padding-bottom: 8px;
 }
 
+.button-group {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+    margin-left: auto;
+}
 #clearInputBtn {
     padding: 10px 20px;
     font-size: 24px;
@@ -554,7 +560,6 @@ select#commentSize {
     border-radius: 5px;
     cursor: pointer;
     flex-shrink: 0;
-    margin-left: auto;
 }
 button[type="submit"] {
     padding: 10px 20px;

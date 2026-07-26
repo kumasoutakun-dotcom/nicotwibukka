@@ -96,8 +96,10 @@
         </div>
 
         <input type="hidden" id="parentKey" value="">
-        <button type="button" id="clearInputBtn" onclick="(function(){ document.getElementById('comment').value=''; document.getElementById('comment_part1').value=''; document.getElementById('comment_part2').value=''; })()">クリア</button>
-        <button type="submit">投稿</button>
+        <span class="button-group">
+            <button type="button" id="clearInputBtn" onclick="(function(){ document.getElementById('comment').value=''; document.getElementById('comment_part1').value=''; document.getElementById('comment_part2').value=''; })()">クリア</button>
+            <button type="submit">投稿</button>
+        </span>
     </div>
 </form>
 
