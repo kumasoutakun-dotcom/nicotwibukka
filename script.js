@@ -1857,36 +1857,30 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       if (quotedRawText.startsWith('__SPLIT__')) {
           quotedRawText = quotedRawText.replace('__SPLIT__', '').replace('\n', ' ');
       }
-      const quotedSanitized = DOMPurify.sanitize(quotedRawText);
-      return quotedSanitized.length > 40 ? quotedSanitized.substring(0, 40) + '…' : quotedSanitized;
+      return DOMPurify.sanitize(quotedRawText);
   }
 
-  function truncateForQuote(text, maxLen) {
-      return text.length > maxLen ? text.substring(0, maxLen) + '…' : text;
-  }
-
-  // 引用元投稿の色・フォント設定(rainbow/5000兆円/dot/カスタムカラー)を再現したHTMLを作る（引用カード表示用）
+  // 引用元投稿の色・フォント設定(rainbow/5000兆円/dot/カスタムカラー)を再現したHTMLを作る（引用カード表示用。全文表示）
   function buildQuoteCardContentHtml(quotedData) {
       const rawText = quotedData.text || '';
       const color = quotedData.color;
       if ((color === '5000trillion' || color === 'split_custom') && rawText.startsWith('__SPLIT__')) {
           const parts = rawText.replace('__SPLIT__', '').split('\n');
-          const p1 = truncateForQuote(DOMPurify.sanitize(parts[0] || ''), 20);
-          const p2 = truncateForQuote(DOMPurify.sanitize(parts[1] || ''), 20);
+          const p1 = DOMPurify.sanitize(parts[0] || '');
+          const p2 = DOMPurify.sanitize(parts[1] || '');
           return `<div class="split-special"><span class="part-upper">${p1}</span><span class="part-lower">${p2}</span></div>`;
       }
       const sanitized = DOMPurify.sanitize(rawText);
-      const snippet = truncateForQuote(sanitized, 40);
       if (color === 'rainbow') {
-          return toRainbowText(snippet);
+          return toRainbowText(sanitized);
       }
       if (color === 'dot') {
-          return `<span class="dot-font">${snippet}</span>`;
+          return `<span class="dot-font">${sanitized}</span>`;
       }
       if (color && /^#[0-9a-fA-F]{6}$/.test(color)) {
-          return `<span style="color: ${color};">${snippet}</span>`;
+          return `<span style="color: ${color};">${sanitized}</span>`;
       }
-      return snippet;
+      return sanitized;
   }
 
   // 本文中の「#quoteNumber」（引用マーカー）を取り除く。前後の空白も一緒にトリムする
@@ -1903,7 +1897,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       });
   }
 
-  // 引用元投稿を取得し、投稿カード上部の引用カードに表示する
+  // 引用元投稿を取得し、投稿カード上部の引用カードに表示する（全文表示。2行を超える場合はもっと見る/折りたたむを付ける）
   async function renderQuoteCard(div, quoteNumber) {
       const cardEl = div.querySelector('.quote-card');
       const found = await fetchQuotedTweetInfo(quoteNumber);
@@ -1927,6 +1921,23 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       cardEl.innerHTML = `<div class="quote-card-header">#${quoteNumber} @${quotedName}</div><div class="quote-card-body">${bodyHtml}</div>`;
       cardEl.classList.add('quote-card-clickable');
       cardEl.addEventListener('click', () => jumpToTweetByNumber(quoteNumber));
+
+      // 2行に収まらない場合、もっと見る/折りたたむトグルを付ける（通常投稿と同じ仕組み）
+      requestAnimationFrame(() => {
+          const bodyEl = cardEl.querySelector('.quote-card-body');
+          if (!bodyEl) return;
+          if (bodyEl.scrollHeight <= bodyEl.clientHeight + 1) return; // 2行に収まっている
+
+          const toggleBtn = document.createElement('span');
+          toggleBtn.className = 'quote-card-toggle';
+          toggleBtn.textContent = 'もっと見る';
+          toggleBtn.onclick = (e) => {
+              e.stopPropagation(); // カード自体のジャンプクリックを誘発しない
+              const expanded = bodyEl.classList.toggle('quote-card-expanded');
+              toggleBtn.textContent = expanded ? '折りたたむ' : 'もっと見る';
+          };
+          cardEl.appendChild(toggleBtn);
+      });
   }
 
   // 引用付き投稿を流れる/中央固定コメントとして表示する際の本文を組み立てる
