@@ -459,6 +459,18 @@ form {
     align-items: center;
 }
 
+.form-field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+}
+.form-field label {
+    font-size: 18px;
+    white-space: nowrap;
+    color: #ccc;
+}
+
 input, select {
     padding: 10px;
     font-size: 20px;
