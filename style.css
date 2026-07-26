@@ -699,6 +699,7 @@ button:disabled {
 }
 .tweet strong {
     font-size: 22px;
+    font-weight: normal; /* <strong>のデフォルトboldを解除（合成ボールドで潰れて見える対策） */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
