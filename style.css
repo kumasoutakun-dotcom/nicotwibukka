@@ -233,6 +233,7 @@ body.comment-only #concurrentUsers { display: none; }
     padding: 10px 15px;
     border-radius: 5px;
     font-size: 20px;
+    font-family: 'k8x12S', sans-serif;
     z-index: 100;
 }
 
@@ -469,6 +470,7 @@ form {
     font-size: 18px;
     white-space: nowrap;
     color: #ccc;
+    font-family: 'k8x12S', sans-serif;
 }
 
 input, select {
@@ -478,6 +480,9 @@ input, select {
     border: 1px solid #ccc;
     flex: 1;
     min-width: 80px;
+}
+input::placeholder {
+    font-family: 'GenZenGothicKaiC', sans-serif;
 }
 
 input#comment  { min-width: 300px; }
@@ -508,8 +513,8 @@ input[type="color"] {
 select#predefinedColor {
     flex: none;
     width: auto;
-    min-width: 120px;
-    max-width: 150px;
+    min-width: 80px;
+    max-width: 100px;
     font-family: 'k8x12S', sans-serif;
     line-height: 1.8;
     padding-top: 6px;
@@ -518,8 +523,8 @@ select#predefinedColor {
 select#commentType {
     flex: none;
     width: auto;
-    min-width: 150px;
-    max-width: 200px;
+    min-width: 80px;
+    max-width: 100px;
     font-family: 'k8x12S', sans-serif;
     line-height: 1.8;
     padding-top: 6px;
@@ -677,6 +682,7 @@ button:disabled {
 .quote-number {
     cursor: pointer;
     color: #aaa;
+    font-family: 'k8x12S', sans-serif;
 }
 .quote-number:hover {
     text-decoration: underline;
@@ -759,6 +765,7 @@ button:disabled {
     font-size: 20px;
     color: #aaa;
     text-align: right;
+    font-family: 'k8x12S', sans-serif;
 }
 /* ドット投稿でも日時は通常フォント */
 .dot-font .timestamp {

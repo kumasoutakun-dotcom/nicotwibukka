@@ -2840,9 +2840,13 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
 
     if (predefinedColor === 'rainbow') {
         localStorage.setItem('commentColorType', 'rainbow');
-    } else {
+    } else if (predefinedColor === 'custom') {
         localStorage.setItem('commentColorType', 'custom');
         localStorage.setItem('commentColor', color);
+    } else {
+        // 白・赤などのプリセット色やdot/五千兆は、選択された値そのものを保存する
+        localStorage.setItem('commentColorType', 'preset');
+        localStorage.setItem('commentColor', predefinedColor);
     }
 } // end _doSave
 
@@ -2872,8 +2876,11 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
         predefinedColorSelect.value = 'custom';
         commentColorPicker.value = savedColor;
         commentColorPicker.disabled = false;
+    } else if (savedColorType === 'preset' && savedColor) {
+        predefinedColorSelect.value = savedColor;
+        commentColorPicker.disabled = true;
     } else {
-        predefinedColorSelect.value = 'default';
+        predefinedColorSelect.value = '#FFFFFF';
         commentColorPicker.value = '#ffffff';
         commentColorPicker.disabled = true;
     }
