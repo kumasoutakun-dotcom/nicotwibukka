@@ -17,7 +17,7 @@
     align-items: center;
     justify-content: center;
     font-family: 'k8x12S', sans-serif;
-    font-size: 28px;
+    font-size: 24px;
     color: #fff;
 }
 #loadingOverlay.hidden {
@@ -232,7 +232,7 @@ body.comment-only #concurrentUsers { display: none; }
     color: white;
     padding: 10px 15px;
     border-radius: 5px;
-    font-size: 20px;
+    font-size: 24px;
     font-family: 'k8x12S', sans-serif;
     z-index: 100;
 }
@@ -265,7 +265,7 @@ body.comment-only #concurrentUsers { display: none; }
     text-align: left;
     margin: 0;
     color: #ffffff;
-    font-size: 80px;
+    font-size: 84px;
     flex-grow: 1;
     white-space: nowrap;
     overflow: hidden;
@@ -283,7 +283,7 @@ body.comment-only #concurrentUsers { display: none; }
 #topUsers h3 {
     margin-top: 0;
     margin-bottom: 5px;
-    font-size: 18px;
+    font-size: 24px;
     text-align: center;
 }
 #topUsers ul {
@@ -293,13 +293,13 @@ body.comment-only #concurrentUsers { display: none; }
 }
 #topUsers li {
     margin-bottom: 2px;
-    font-size: 15px;
+    font-size: 12px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 .equal-rank-info {
-    font-size: 14px;
+    font-size: 12px;
     color: #bbb;
     text-align: right;
     margin-top: 5px;
@@ -312,12 +312,12 @@ body.comment-only #concurrentUsers { display: none; }
     border-radius: 8px;
     margin-top: 12px;
     font-family: 'k8x12S', sans-serif;
-    font-size: 20px;
+    font-size: 24px;
     color: #fff;
 }
 #replayPanel h3 {
     margin: 0 0 10px 0;
-    font-size: 30px;
+    font-size: 36px;
     text-align: center;
 }
 #replayPanel .replay-row {
@@ -330,7 +330,7 @@ body.comment-only #concurrentUsers { display: none; }
 #replayPanel input[type="number"] {
     width: 70px;
     font-family: 'k8x12S', sans-serif;
-    font-size: 14px;
+    font-size: 12px;
     padding: 4px 6px;
     border-radius: 4px;
     border: 1px solid #aaa;
@@ -352,7 +352,7 @@ body.comment-only #concurrentUsers { display: none; }
     border-radius: 5px;
     padding: 6px 14px;
     font-family: 'k8x12S', sans-serif;
-    font-size: 15px;
+    font-size: 12px;
     cursor: pointer;
 }
 #replayTxtStartBtn {
@@ -362,7 +362,7 @@ body.comment-only #concurrentUsers { display: none; }
     border-radius: 5px;
     padding: 6px 14px;
     font-family: 'k8x12S', sans-serif;
-    font-size: 15px;
+    font-size: 12px;
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
@@ -374,18 +374,18 @@ body.comment-only #concurrentUsers { display: none; }
     border-radius: 5px;
     padding: 6px 14px;
     font-family: 'k8x12S', sans-serif;
-    font-size: 15px;
+    font-size: 12px;
     cursor: pointer;
 }
 #replayStatus {
-    font-size: 13px;
+    font-size: 12px;
     color: #aad;
     margin-top: 4px;
 }
 
 /* 全ユーザー一覧 */
 #allUsers {
-    font-size: 20px;
+    font-size: 24px;
     margin-top: 30px;
     background: #1a3a5a;
     padding: 15px;
@@ -393,7 +393,7 @@ body.comment-only #concurrentUsers { display: none; }
     font-family: 'k8x12S', sans-serif;
 }
 #allUsers h3 {
-    font-size: 30px;
+    font-size: 36px;
     margin-top: 0;
     margin-bottom: 15px;
     text-align: center;
@@ -406,7 +406,7 @@ body.comment-only #concurrentUsers { display: none; }
     flex-wrap: wrap;
 }
 #allUsers li {
-    font-size: 20px;
+    font-size: 24px;
     margin-bottom: 8px;
     margin-right: 15px;
     white-space: nowrap;
@@ -467,7 +467,7 @@ form {
     flex: none;
 }
 .form-field label {
-    font-size: 18px;
+    font-size: 24px;
     white-space: nowrap;
     color: #ccc;
     font-family: 'k8x12S', sans-serif;
@@ -504,7 +504,7 @@ input[type="color"] {
     cursor: pointer;
 }
 #colorPickerContainer label {
-    font-size: 18px;
+    font-size: 24px;
     white-space: nowrap;
     color: #fff;
     font-family: 'k8x12S', sans-serif;
@@ -516,6 +516,7 @@ select#predefinedColor {
     min-width: 80px;
     max-width: 100px;
     font-family: 'k8x12S', sans-serif;
+    font-size: 24px;
     line-height: 1.8;
     padding-top: 6px;
     padding-bottom: 8px;
@@ -526,6 +527,7 @@ select#commentType {
     min-width: 80px;
     max-width: 100px;
     font-family: 'k8x12S', sans-serif;
+    font-size: 24px;
     line-height: 1.8;
     padding-top: 6px;
     padding-bottom: 8px;
@@ -536,6 +538,7 @@ select#commentSize {
     min-width: 60px;
     max-width: 80px;
     font-family: 'k8x12S', sans-serif;
+    font-size: 24px;
     line-height: 1.8;
     padding-top: 6px;
     padding-bottom: 8px;
@@ -543,7 +546,7 @@ select#commentSize {
 
 #clearInputBtn {
     padding: 10px 20px;
-    font-size: 20px;
+    font-size: 24px;
     font-family: 'k8x12S', sans-serif;
     background: #ff69b4;
     color: white;
@@ -555,7 +558,7 @@ select#commentSize {
 }
 button[type="submit"] {
     padding: 10px 20px;
-    font-size: 20px;
+    font-size: 24px;
     font-family: 'k8x12S', sans-serif;
     background: #00ced1;
     color: white;
@@ -586,7 +589,7 @@ button:disabled {
 .feed-tab {
     flex: 1;
     padding: 8px 0;
-    font-size: 22px;
+    font-size: 24px;
     font-family: 'k8x12S', sans-serif;
     background: #10283d;
     color: #ccc;
@@ -683,6 +686,7 @@ button:disabled {
     cursor: pointer;
     color: #aaa;
     font-family: 'k8x12S', sans-serif;
+    font-size: 24px;
 }
 .quote-number:hover {
     text-decoration: underline;
@@ -762,7 +766,7 @@ button:disabled {
     padding: 0;
 }
 .timestamp {
-    font-size: 20px;
+    font-size: 24px;
     color: #aaa;
     text-align: right;
     font-family: 'k8x12S', sans-serif;
@@ -830,7 +834,7 @@ button:disabled {
     padding-left: 3px;
     color: #ffffff;
     font-family: 'k8x12S', sans-serif;
-    font-size: 21px;
+    font-size: 24px;
     font-weight: normal;
     font-style: normal;
 }
@@ -1084,12 +1088,12 @@ body.rainbow-anim-off .rainbow-char:nth-of-type(6n+6) { color: #BF00FF !importan
 }
 #exportModalBox h3 {
     margin: 0 0 4px 0;
-    font-size: 20px;
+    font-size: 24px;
     text-align: center;
 }
 .export-option-btn {
     padding: 12px 16px;
-    font-size: 18px;
+    font-size: 24px;
     font-family: 'k8x12S', sans-serif;
     border: none;
     border-radius: 6px;
@@ -1106,7 +1110,7 @@ body.rainbow-anim-off .rainbow-char:nth-of-type(6n+6) { color: #BF00FF !importan
 }
 #exportModalCancel {
     padding: 8px;
-    font-size: 16px;
+    font-size: 12px;
     font-family: 'k8x12S', sans-serif;
     border: none;
     border-radius: 6px;
@@ -1117,7 +1121,7 @@ body.rainbow-anim-off .rainbow-char:nth-of-type(6n+6) { color: #BF00FF !importan
 }
 #exportModalCancel:hover { background: #555; }
 #exportModalStatus {
-    font-size: 15px;
+    font-size: 12px;
     color: #aef;
     text-align: center;
     min-height: 1.2em;
