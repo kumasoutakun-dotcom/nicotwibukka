@@ -1621,12 +1621,17 @@ function appendTweetToLog(key, text, color, timestamp, user) {
 }
 // ↑↑↑ appendTweetToLog 関数 ↑↑↑
 function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
+    // 引用(#数字)がある場合、表示用テキストからその「#数字」部分を取り除く
+    // （引用カードが内容を表示するので、本文側は残りのコメント部分だけにする）
+    const quoteStrippedText = data.quote ? stripQuoteMarker(data.text, data.quote) : data.text;
     // __SPLIT__フォーマットの場合はプレフィックスを除いたテキストでチェック
-    const rawText = (data.text && data.text.startsWith('__SPLIT__'))
-        ? data.text.replace('__SPLIT__', '').replace('\n', ' ')
-        : data.text;
+    const rawText = (quoteStrippedText && quoteStrippedText.startsWith('__SPLIT__'))
+        ? quoteStrippedText.replace('__SPLIT__', '').replace('\n', ' ')
+        : quoteStrippedText;
     const sanitizedText = DOMPurify.sanitize(rawText);
     const now = Date.now();
+    // 「#数字」だけの投稿で、取り除いた後に本文が残らない場合は引用カードのみ表示する
+    const isQuoteOnly = !!data.quote && sanitizedText.trim() === '';
 
     // フィルタリングロジック（__SPLIT__除去後のテキストでチェック）
     if (containsSpam(sanitizedText) || containsForbiddenHtmlTags(sanitizedText) ||
@@ -1677,14 +1682,15 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
 
     let commentContentHtml = '';
     let pStyle = '';
+    let textContentExtraClass = '';
 
     if (data.color === 'rainbow') {
         commentContentHtml = toRainbowText(sanitizedText);
         pStyle = 'style="color: initial;"';
     } else if (data.color === '5000trillion' || data.color === 'split_custom') {
         // __SPLIT__フォーマットを投稿ストリーム用にHTMLに変換
-        if (data.text && data.text.startsWith('__SPLIT__')) {
-            const parts = data.text.replace('__SPLIT__', '').split('\n');
+        if (quoteStrippedText && quoteStrippedText.startsWith('__SPLIT__')) {
+            const parts = quoteStrippedText.replace('__SPLIT__', '').split('\n');
             const p1 = linkifyMentions(DOMPurify.sanitize(parts[0] || ''));
             const p2 = linkifyMentions(DOMPurify.sanitize(parts[1] || ''));
             commentContentHtml = `<div class="split-special"><span class="part-upper">${p1}</span><span class="part-lower">${p2}</span></div>`;
@@ -1695,21 +1701,23 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
     } else if (data.color === 'dot') {
         commentContentHtml = linkifyMentions(sanitizedText);
         pStyle = 'style="color: #FFFFFF;"';
-        div.classList.add('dot-font');
+        textContentExtraClass = ' dot-font'; // dot-fontは本文だけに適用する（投稿全体には付けない）
     } else {
         commentContentHtml = linkifyMentions(sanitizedText);
         pStyle = `style="color: ${data.color || '#FFFFFF'};"`;
     }
 
     const quoteCardHtml = data.quote ? `<div class="quote-card" data-quote-number="${data.quote}"><div class="quote-card-loading">読み込み中…</div></div>` : '';
+    // 「#数字」だけの投稿（引用のみ）なら本文欄自体を出さない
+    const textContentHtml = isQuoteOnly ? '' : `<div class="tweet-text-content size-${data.size || 'medium'}${textContentExtraClass}" ${pStyle}>${commentContentHtml}</div>`;
 
     div.innerHTML = `
     <div class="tweet-header">
         <strong><span class="quote-number" onclick="insertQuoteIntoForm(${currentTweetNumber})" title="この投稿を引用">#${currentTweetNumber}</span> @${displayUserName}</strong>
     </div>
     ${quoteCardHtml}
-    <div class="tweet-text-content size-${data.size || 'medium'}" ${pStyle}>${commentContentHtml}</div>
-    <div class="log-actions" style="display: ${isOverFlow ? 'flex' : 'none'};">
+    ${textContentHtml}
+    <div class="log-actions" style="display: ${(isOverFlow && !isQuoteOnly) ? 'flex' : 'none'};">
         <button class="toggle-log-btn">もっと見る</button>
     </div>
     <div class="tweet-footer">
@@ -1727,7 +1735,9 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
         renderQuoteCard(div, data.quote);
     }
 
-    updateTweetDisplay(div, data);
+    if (!isQuoteOnly) {
+        updateTweetDisplay(div, data);
+    }
 
     if (!toggleLogDisplayCheckbox.checked) {
         div.style.display = 'none';
@@ -1877,6 +1887,12 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
           return `<span style="color: ${color};">${snippet}</span>`;
       }
       return snippet;
+  }
+
+  // 本文中の「#quoteNumber」（引用マーカー）を取り除く。前後の空白も一緒にトリムする
+  function stripQuoteMarker(text, quoteNumber) {
+      if (!text || !quoteNumber) return text;
+      return text.replace(new RegExp('#' + quoteNumber + '\\s*'), '').trim();
   }
 
   // 本文中の「#数字」をクリック可能な引用リンクに変換する（サニタイズ済みテキストに対して使用）
