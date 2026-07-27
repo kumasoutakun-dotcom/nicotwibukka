@@ -255,10 +255,21 @@ window.addEventListener('offline', updateConnectionStatus);
 updateConnectionStatus();
 // --- ここまで ---
 
-  async function incrementReadCount() {
-      await readCountRef.transaction((currentCount) => {
-          return (currentCount || 0) + 1;
-      }).catch(e => console.error("Failed to increment readCount:", e));
+  // readCountは1件ごとにFirebaseへ書き込むと重くなるため、ローカルで貯めて500msごとにまとめて反映する
+  let pendingReadCount = 0;
+  let readCountFlushTimer = null;
+  function incrementReadCount() {
+      pendingReadCount++;
+      if (readCountFlushTimer) return; // 既に予約済みなら何もしない（このタイミングでまとめて加算される）
+      readCountFlushTimer = setTimeout(() => {
+          readCountFlushTimer = null;
+          const toAdd = pendingReadCount;
+          pendingReadCount = 0;
+          if (toAdd <= 0) return;
+          readCountRef.transaction((currentCount) => {
+              return (currentCount || 0) + toAdd;
+          }).catch(e => console.error("Failed to increment readCount:", e));
+      }, 500);
   }
 
   async function incrementWriteCount() {
@@ -1188,6 +1199,17 @@ if (predefinedColorSelect.value === 'rainbow') {
 });
 
      
+  // updateUserStats()は直近100件を毎回スキャンする重い処理なので、
+  // 連続で呼ばれても500msに1回だけまとめて実行する
+  let userStatsUpdateTimer = null;
+  function scheduleUpdateUserStats() {
+      if (userStatsUpdateTimer) return; // 既に予約済みなら何もしない
+      userStatsUpdateTimer = setTimeout(() => {
+          userStatsUpdateTimer = null;
+          updateUserStats();
+      }, 500);
+  }
+
   function updateUserStats() {
     let tempUserCounts = {};
     let tempUserFirstTweetTime = {}; 
@@ -1812,7 +1834,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
         }; // ここでonclickのブロックが閉じます
     } // ここでif(reactionBtn)のブロックが閉じます
     
-    updateUserStats();
+    scheduleUpdateUserStats();
 
     if (isNewTweet) {
         // フローティング表示より先にキューに積んで遅延を最小化
@@ -2079,7 +2101,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
                 });
             });
         }
-        updateUserStats();
+        scheduleUpdateUserStats();
     } catch (error) {
         console.error("初期データの読み込みに失敗しました:", error);
     }
@@ -2136,7 +2158,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
           Object.keys(data).forEach((key, index) => {
               appendTweetToStream(key, data[key], index + 1, false);
           });
-          updateUserStats();
+          scheduleUpdateUserStats();
       } catch (error) {
           console.error("話題タブの読み込みに失敗しました:", error);
       } finally {
@@ -2172,7 +2194,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
               oldest.remove();
               delete allTweets[oldestKey];
           }
-          updateUserStats();
+          scheduleUpdateUserStats();
       }, (error) => {
           console.error("話題タブ child_added リスナーでエラー:", error);
       });
@@ -2194,7 +2216,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
           } else {
               appendTweetToStream(key, data, null, false);
           }
-          updateUserStats();
+          scheduleUpdateUserStats();
       }, (error) => {
           console.error("話題タブ child_changed リスナーでエラー:", error);
       });
@@ -2205,7 +2227,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
           const key = snapshot.key;
           removeTweetFromDOMAndMaps(key);
           delete allTweets[key];
-          updateUserStats();
+          scheduleUpdateUserStats();
       }, (error) => {
           console.error("話題タブ child_removed リスナーでエラー:", error);
       });
@@ -2339,10 +2361,10 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
               oldest.remove();
               delete allTweets[oldestKey];
           }
-          updateUserStats();
+          scheduleUpdateUserStats();
       } else {
           // 100件未満：除去不要、投稿されたタイミングでランキング更新
-          updateUserStats();
+          scheduleUpdateUserStats();
       }
     }, (error) => {
       console.error("child_added リスナーでエラー:", error);
@@ -2372,7 +2394,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       } else {
           appendTweetToStream(key, data, null, false);
       }
-      updateUserStats();
+      scheduleUpdateUserStats();
     }, (error) => {
       console.error("child_changed リスナーでエラー:", error);
     });
@@ -2386,7 +2408,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       const key = snapshot.key;
       removeTweetFromDOMAndMaps(key);
       delete allTweets[key];
-      updateUserStats();
+      scheduleUpdateUserStats();
       // 番号はdata.tweetNumberを使うため振り直し不要
     }, (error) => {
       console.error("child_removed リスナーでエラー:", error);
