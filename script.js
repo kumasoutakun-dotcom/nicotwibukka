@@ -15,8 +15,8 @@
   const tweetStream = document.getElementById('tweetStream');
   const topUserList = document.getElementById('topUserList'); 
   const allUserList = document.getElementById('allUserList'); 
-  const commentArea = document.getElementById('commentArea');
-  const mainAreaEl = document.getElementById('mainArea'); 
+  const nicoArea = document.getElementById('nicoArea');
+  const twiAreaEl = document.getElementById('twiArea'); 
   const commentInput = document.getElementById('comment');
   const concurrentUsersDiv = document.getElementById('concurrentUsers');
   const submitButton = form.querySelector('button[type="submit"]'); 
@@ -318,11 +318,11 @@ updateConnectionStatus();
 // activeFloatingCommentsMap はグローバルな activeFloatingComments を指す
 
 function getFloatingCommentYPosition(durationMs) { // durationMs が正確か確認
-    const commentAreaHeight = commentArea.offsetHeight;
+    const nicoAreaHeight = nicoArea.offsetHeight;
     const currentTime = Date.now(); // 現在時刻をミリ秒で取得
 
     // レーン数を計算 (現在の画面の高さから何レーン確保できるか)
-    const numLines = Math.floor(commentAreaHeight / (FLOATING_COMMENT_HEIGHT + FLOATING_COMMENT_MARGIN));
+    const numLines = Math.floor(nicoAreaHeight / (FLOATING_COMMENT_HEIGHT + FLOATING_COMMENT_MARGIN));
 
     // レーン配列の初期化またはサイズ変更
     if (floatingCommentLines.length !== numLines) {
@@ -647,18 +647,18 @@ function limitComments() {
     } else {
         // フォールバック（もし floatingCommentsWrapper が見つからなかった場合）
         // 開発環境でデバッグしやすくするため、console.warn を追加しています
-        commentArea.appendChild(commentElement); // 以前の commentArea に追加
-        console.warn("Element with ID 'floatingCommentsWrapper' not found. Appending to 'commentArea' as fallback.");
+        nicoArea.appendChild(commentElement); // 以前の nicoArea に追加
+        console.warn("Element with ID 'floatingCommentsWrapper' not found. Appending to 'nicoArea' as fallback.");
     }
     // ★★★ここまで修正★★★
 
     // コメントの幅と親要素の幅を取得する際には、新しい親要素の幅を使うべきです。
-    // floatingCommentsWrapper があればその幅を、なければ commentArea の幅を使用します。
-    const parentWidth = floatingCommentsWrapper ? floatingCommentsWrapper.offsetWidth : commentArea.offsetWidth;
+    // floatingCommentsWrapper があればその幅を、なければ nicoArea の幅を使用します。
+    const parentWidth = floatingCommentsWrapper ? floatingCommentsWrapper.offsetWidth : nicoArea.offsetWidth;
 
     const commentWidth = commentElement.offsetWidth;
-    // commentAreaWidth は parentWidth に変更
-    // const commentAreaWidth = commentArea.offsetWidth; // この行は不要になるか、parentWidthで代用
+    // nicoAreaWidth は parentWidth に変更
+    // const nicoAreaWidth = nicoArea.offsetWidth; // この行は不要になるか、parentWidthで代用
 
     const animationDurationMs = 10 * 1000; // 常に10秒 (ミリ秒単位)
 
@@ -666,7 +666,7 @@ function limitComments() {
 
     // getFloatingCommentYPosition 関数も、もし必要なら
     // floatingCommentsWrapper の高さに基づいて調整する必要があるかもしれません。
-    // 現在は commentArea の高さを基準にしている可能性があるので、確認が必要です。
+    // 現在は nicoArea の高さを基準にしている可能性があるので、確認が必要です。
     const assignedY = getFloatingCommentYPosition(animationDurationMs);
 
     if (assignedY === null) {
@@ -777,7 +777,7 @@ function limitComments() {
     }
 
     const floatingCommentsWrapper = document.getElementById('floatingCommentsWrapper');
-    (floatingCommentsWrapper || commentArea).appendChild(div);
+    (floatingCommentsWrapper || nicoArea).appendChild(div);
     activeCenterFixedComments.set(key, { element: div, timestamp: timestamp });
 
     adjustCenterFixedCommentFontSize(div);
@@ -794,7 +794,7 @@ function limitComments() {
 }
      
   function adjustCenterFixedCommentFontSize(element) {
-      const targetWidth = commentArea.clientWidth * 0.9;
+      const targetWidth = nicoArea.clientWidth * 0.9;
       const sizeScale = getSizeScale(element.dataset.size);
       const baseNormalSize = 70 * sizeScale;
       const baseSplitSize = 70 * sizeScale;
@@ -880,7 +880,7 @@ function limitComments() {
   function updateCenterFixedCommentPositions() {
       const now = Date.now();
       const floatingCommentsWrapper = document.getElementById('floatingCommentsWrapper');
-      const containerEl = floatingCommentsWrapper || commentArea;
+      const containerEl = floatingCommentsWrapper || nicoArea;
 
       // 古いコメントを削除
       activeCenterFixedComments.forEach((comment, key) => {
@@ -2618,30 +2618,30 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
     const isPortrait = windowWidth <= windowHeight;
     const logShown = toggleLogDisplayCheckbox.checked;
     if (isPortrait && logShown) {
-        // 縦長: commentArea高さ = 幅 × 9/16 → フローティングエリアが 縦:横 = 9:16 になる
+        // 縦長: nicoArea高さ = 幅 × 9/16 → フローティングエリアが 縦:横 = 9:16 になる
         const targetCommentH = Math.min(scaledLogicalWidth * 9 / 16, scaledLogicalHeight * 0.85);
-        commentArea.style.flex = 'none';
-        commentArea.style.width = '';
-        commentArea.style.height = `${targetCommentH}px`;
-        // mainAreaはリセット（残り高さをflex:1で取る）
-        mainAreaEl.style.flex = '';
-        mainAreaEl.style.width = '';
+        nicoArea.style.flex = 'none';
+        nicoArea.style.width = '';
+        nicoArea.style.height = `${targetCommentH}px`;
+        // twiAreaはリセット（残り高さをflex:1で取る）
+        twiAreaEl.style.flex = '';
+        twiAreaEl.style.width = '';
     } else if (!isPortrait && logShown) {
-        // 横長: mainArea幅 = 高さ × 9/16 → ログエリアが 縦:横 = 16:9 になる
+        // 横長: twiArea幅 = 高さ × 9/16 → ログエリアが 縦:横 = 16:9 になる
         const targetMainW = scaledLogicalHeight * 9 / 16;
-        mainAreaEl.style.flex = 'none';
-        mainAreaEl.style.width = `${targetMainW}px`;
-        // commentAreaはリセット（残り幅をflex:1で取る）
-        commentArea.style.flex = '';
-        commentArea.style.width = '';
-        commentArea.style.height = '';
+        twiAreaEl.style.flex = 'none';
+        twiAreaEl.style.width = `${targetMainW}px`;
+        // nicoAreaはリセット（残り幅をflex:1で取る）
+        nicoArea.style.flex = '';
+        nicoArea.style.width = '';
+        nicoArea.style.height = '';
     } else {
         // ログ非表示 → 両方リセット
-        commentArea.style.flex = '';
-        commentArea.style.width = '';
-        commentArea.style.height = '';
-        mainAreaEl.style.flex = '';
-        mainAreaEl.style.width = '';
+        nicoArea.style.flex = '';
+        nicoArea.style.width = '';
+        nicoArea.style.height = '';
+        twiAreaEl.style.flex = '';
+        twiAreaEl.style.width = '';
     }
 
     // スケール調整後にコメントの位置を再調整
@@ -2666,7 +2666,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
   //   「h1幅 + topUsers幅 = 全体幅」かつ「h1高さ = topUsers高さ」を同時に満たすよう
   //   topUsersスケール s をバイナリサーチで求める。
   function balanceHeader() {
-      const h1 = document.querySelector('#mainArea h1');
+      const h1 = document.querySelector('#twiArea h1');
       const topUsersEl = document.getElementById('topUsers');
       const headerSection = document.getElementById('headerSection');
       if (!h1 || !topUsersEl || !headerSection) return;

@@ -66,15 +66,15 @@ body {
 
 @media (max-aspect-ratio: 1/1) {
     #container { flex-direction: column; }
-    #commentArea { flex: 2; }
-    #mainArea { flex: 1; }
+    #nicoArea { flex: 2; }
+    #twiArea { flex: 1; }
     .tweet { font-size: 33px; } /* 縦長は少し大きめ */
 }
 
 /* コメントのみモード */
 body.comment-only #container { flex-direction: column; }
-body.comment-only #commentArea { flex: 1; width: 100%; }
-body.comment-only #mainArea,
+body.comment-only #nicoArea { flex: 1; width: 100%; }
+body.comment-only #twiArea,
 body.comment-only #concurrentUsers { display: none; }
 
 
@@ -82,7 +82,7 @@ body.comment-only #concurrentUsers { display: none; }
    2. コメントエリア・フローティング
    ============================================================= */
 
-#commentArea {
+#nicoArea {
     background: #001f33;
     color: white;
     position: relative;
@@ -242,7 +242,7 @@ body.comment-only #concurrentUsers { display: none; }
    4. メインエリア（投稿フォーム・ヘッダー・ユーザー統計）
    ============================================================= */
 
-#mainArea {
+#twiArea {
     flex: 1;
     padding: 25px;
     overflow-y: auto;
@@ -260,7 +260,7 @@ body.comment-only #concurrentUsers { display: none; }
     gap: 0;
 }
 
-#mainArea h1 {
+#twiArea h1 {
     font-family: 'k8x12S', sans-serif;
     text-align: left;
     margin: 0;
