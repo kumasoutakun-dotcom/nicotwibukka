@@ -635,9 +635,16 @@ button:disabled {
     font-size: 18px !important;
 }
 .quote-card-header {
-    font-weight: bold;
     color: #8ab4e8;
     margin-bottom: 2px;
+}
+.quote-card-number {
+    font-family: 'k8x12S', sans-serif;
+    font-weight: normal;
+}
+.quote-card-name {
+    font-family: 'GenZenGothicKaiC', sans-serif;
+    font-weight: normal;
 }
 .quote-card-body {
     color: #cfd8e3;

@@ -1392,15 +1392,18 @@ if (predefinedColorSelect.value === 'rainbow') {
         return;
     }
 
+    // 引用(#数字)がある場合は、appendTweetToStreamと同じく本文表示からその部分を取り除く
+    const quoteStrippedText = tweetData.quote ? stripQuoteMarker(tweetData.text, tweetData.quote) : tweetData.text;
+
     // 虹色と通常色の表示を正しく処理
-    const sanitizedText = DOMPurify.sanitize(tweetData.text, { USE_PROFILES: { html: false } });
+    const sanitizedText = DOMPurify.sanitize(quoteStrippedText, { USE_PROFILES: { html: false } });
     if (tweetData.color === 'rainbow') {
         tweetTextElement.innerHTML = toRainbowText(sanitizedText);
         tweetTextElement.style.color = 'initial';
     } else if (tweetData.color === '5000trillion' || tweetData.color === 'split_custom') {
         // appendTweetToStream で既にHTMLをセット済みのため何もしない
     } else {
-        tweetTextElement.textContent = sanitizedText;
+        tweetTextElement.innerHTML = linkifyMentions(sanitizedText);
         tweetTextElement.style.color = tweetData.color || '#FFFFFF';
     }
 
@@ -1918,7 +1921,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       }
       const quotedName = (found.data.name && found.data.name.trim()) ? found.data.name : '名無し';
       const bodyHtml = buildQuoteCardContentHtml(found.data);
-      cardEl.innerHTML = `<div class="quote-card-header">#${quoteNumber} @${quotedName}</div><div class="quote-card-body">${bodyHtml}</div>`;
+      cardEl.innerHTML = `<div class="quote-card-header"><span class="quote-card-number">#${quoteNumber}</span> <span class="quote-card-name">@${quotedName}</span></div><div class="quote-card-body">${bodyHtml}</div>`;
       cardEl.classList.add('quote-card-clickable');
       cardEl.addEventListener('click', () => jumpToTweetByNumber(quoteNumber));
 
