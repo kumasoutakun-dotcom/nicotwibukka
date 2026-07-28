@@ -1966,20 +1966,20 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
   }
 
   // 引用付き投稿を流れる/中央固定コメントとして表示する際の本文を組み立てる
-  // 「#番号　引用元本文　投稿本文」の形にする（__SPLIT__＝五千兆円フォーマットの場合は前半に差し込む）
+  // nicoAreaでは「#番号」は消さず、そのすぐ後ろに引用元の内容を挿入する（__SPLIT__＝五千兆円フォーマットでも本文中の#番号の位置に挿入）
   async function buildFloatingTextWithQuote(data) {
       if (!data.quote) return data.text;
-      const found = await fetchQuotedTweetInfo(data.quote);
-      if (!found) return data.text;
-      const snippet = buildQuotePlainSnippet(found.data);
-      const prefix = `#${data.quote}　${snippet}　`;
       const rawText = data.text || '';
-      if (rawText.startsWith('__SPLIT__')) {
-          const parts = rawText.replace('__SPLIT__', '').split('\n');
-          const newPart1 = prefix + (parts[0] || '');
-          return `__SPLIT__${newPart1}\n${parts[1] || ''}`;
+      const found = await fetchQuotedTweetInfo(data.quote);
+      if (!found) return rawText;
+      const snippet = buildQuotePlainSnippet(found.data);
+      const markerRegex = new RegExp('#' + data.quote + '\\s*');
+      const insertion = `#${data.quote}　${snippet}　`;
+      if (markerRegex.test(rawText)) {
+          return rawText.replace(markerRegex, insertion);
       }
-      return prefix + rawText;
+      // 万一本文中に#番号が見当たらない場合は先頭に付ける
+      return insertion + rawText;
   }
 
   // 指定tweetNumberの投稿が「直近100件」の表示範囲内にあれば、その投稿までスクロールして移動する
