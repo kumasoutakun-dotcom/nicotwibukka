@@ -215,3 +215,16 @@
   adjustOverallScale();
   window.addEventListener('resize', debounceAdjustScale);
 
+  // 画面回転（縦長⇔横長の切り替え）対応：
+  // orientationchangeは端末やブラウザによってresizeが確実に発火するとは限らないため、
+  // 別途こちらでも再計算をトリガーする。回転直後はwindow.innerWidth/innerHeightが
+  // まだ回転前の値のことがあるため、少し待ってから実行する。
+  window.addEventListener('orientationchange', () => {
+      setTimeout(debounceAdjustScale, 300);
+  });
+  if (window.screen && window.screen.orientation) {
+      window.screen.orientation.addEventListener('change', () => {
+          setTimeout(debounceAdjustScale, 300);
+      });
+  }
+
