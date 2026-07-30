@@ -543,8 +543,7 @@ if (predefinedColorSelect.value === 'rainbow') {
       }
   }
 
-  // 検索タブ：スライダーで指定された範囲のtweetNumberを読み込み、検索対象として保持する（ライブ更新なし）
-  // タブを開いた直後は「最新から直近100件」がデフォルト範囲になる
+  // 検索タブ：開いた直後は「最新から直近100件」を範囲の初期値としてセットする（まだ取得はしない）
   async function loadSearchableTweets() {
       showLoading('検索の準備をしています…');
       let latestNumber = 1;
@@ -554,24 +553,37 @@ if (predefinedColorSelect.value === 'rainbow') {
           latestNumber = totalSnapshot.val() || 1;
       } catch (error) {
           console.error("投稿数の取得に失敗しました:", error);
+      } finally {
+          hideLoading();
       }
 
       const rangeMinEl = document.getElementById('searchRangeMin');
       const rangeMaxEl = document.getElementById('searchRangeMax');
       const defaultMin = Math.max(1, latestNumber - 99);
-      if (rangeMinEl) { rangeMinEl.min = 1; rangeMinEl.max = latestNumber; rangeMinEl.value = defaultMin; }
-      if (rangeMaxEl) { rangeMaxEl.min = 1; rangeMaxEl.max = latestNumber; rangeMaxEl.value = latestNumber; }
-      updateSearchRangeUI();
+      if (rangeMinEl) rangeMinEl.value = defaultMin;
+      if (rangeMaxEl) rangeMaxEl.value = latestNumber;
 
-      await fetchSearchableTweetsInRange(defaultMin, latestNumber);
-
+      tweetStream.innerHTML = `<div class="search-hint">範囲(第${defaultMin}〜${latestNumber}件目が初期値)とキーワードを指定して検索できます</div>`;
       const searchInputEl = document.getElementById('searchInput');
       if (searchInputEl) searchInputEl.focus();
   }
 
-  // 指定範囲(tweetNumber)の投稿をFirebaseから取得し、searchableTweetsにセットする
-  async function fetchSearchableTweetsInRange(rangeMin, rangeMax) {
-      showLoading('検索範囲を読み込んでいます…');
+  // 指定範囲(tweetNumber)をFirebaseから取得し、キーワード・ユーザー名・#番号で絞り込んで表示する
+  async function executeSearch() {
+      const rangeMinEl = document.getElementById('searchRangeMin');
+      const rangeMaxEl = document.getElementById('searchRangeMax');
+      const searchInputEl = document.getElementById('searchInput');
+
+      let rangeMin = parseInt(rangeMinEl ? rangeMinEl.value : '1', 10);
+      let rangeMax = parseInt(rangeMaxEl ? rangeMaxEl.value : '1', 10);
+      if (isNaN(rangeMin)) rangeMin = 1;
+      if (isNaN(rangeMax)) rangeMax = rangeMin;
+      if (rangeMin > rangeMax) { const tmp = rangeMin; rangeMin = rangeMax; rangeMax = tmp; }
+      const query = searchInputEl ? searchInputEl.value.trim() : '';
+
+      tweetStream.innerHTML = '';
+      tweetDomCache.clear();
+      showLoading('検索中…');
       try {
           const snapshot = await db.ref('tweets').orderByChild('tweetNumber').startAt(rangeMin).endAt(rangeMax).once('value');
           await incrementReadCount();
@@ -582,89 +594,22 @@ if (predefinedColorSelect.value === 'rainbow') {
       } finally {
           hideLoading();
       }
-      tweetStream.innerHTML = `<div class="search-hint">#${rangeMin} 〜 #${rangeMax}（${Object.keys(searchableTweets).length}件）からキーワード・ユーザー名・#番号で検索できます</div>`;
-  }
 
-  // スライダーの左右の値が交差しないように調整しつつ、ラベルと選択範囲の帯を更新する
-  function updateSearchRangeUI() {
-      const rangeMinEl = document.getElementById('searchRangeMin');
-      const rangeMaxEl = document.getElementById('searchRangeMax');
-      const minLabel = document.getElementById('searchRangeMinLabel');
-      const maxLabel = document.getElementById('searchRangeMaxLabel');
-      const activeTrack = document.getElementById('searchRangeTrackActive');
-      if (!rangeMinEl || !rangeMaxEl) return;
-
-      let minVal = parseInt(rangeMinEl.value, 10);
-      let maxVal = parseInt(rangeMaxEl.value, 10);
-      if (minVal > maxVal) {
-          // 交差したら、動かした側に合わせてもう片方も揃える
-          if (document.activeElement === rangeMinEl) {
-              maxVal = minVal;
-              rangeMaxEl.value = maxVal;
-          } else {
-              minVal = maxVal;
-              rangeMinEl.value = minVal;
-          }
+      let matchedKeys = Object.keys(searchableTweets);
+      if (query) {
+          const numberMatch = query.match(/^#?(\d+)$/);
+          const targetNumber = numberMatch ? parseInt(numberMatch[1], 10) : null;
+          const lowerQuery = query.toLowerCase();
+          matchedKeys = matchedKeys.filter((key) => {
+              const data = searchableTweets[key];
+              if (!data) return false;
+              if (targetNumber !== null && Number(data.tweetNumber) === targetNumber) return true;
+              const textMatch = data.text && data.text.toLowerCase().includes(lowerQuery);
+              const nameMatch = data.name && data.name.toLowerCase().includes(lowerQuery);
+              return textMatch || nameMatch;
+          });
       }
-
-      if (minLabel) minLabel.textContent = minVal;
-      if (maxLabel) maxLabel.textContent = maxVal;
-
-      const sliderMax = parseInt(rangeMinEl.max, 10) || 1;
-      if (activeTrack && sliderMax > 0) {
-          const leftPct = ((minVal - 1) / sliderMax) * 100;
-          const rightPct = ((sliderMax - maxVal) / sliderMax) * 100;
-          activeTrack.style.left = leftPct + '%';
-          activeTrack.style.right = rightPct + '%';
-      }
-      return { minVal, maxVal };
-  }
-
-  // スライダーのイベント設定：ドラッグ中はラベル更新のみ、離した時(change)にFirebaseへ取りに行く
-  const searchRangeMinElAtLoad = document.getElementById('searchRangeMin');
-  const searchRangeMaxElAtLoad = document.getElementById('searchRangeMax');
-  if (searchRangeMinElAtLoad && searchRangeMaxElAtLoad) {
-      searchRangeMinElAtLoad.addEventListener('input', updateSearchRangeUI);
-      searchRangeMaxElAtLoad.addEventListener('input', updateSearchRangeUI);
-      searchRangeMinElAtLoad.addEventListener('change', () => {
-          const { minVal, maxVal } = updateSearchRangeUI();
-          fetchSearchableTweetsInRange(minVal, maxVal);
-      });
-      searchRangeMaxElAtLoad.addEventListener('change', () => {
-          const { minVal, maxVal } = updateSearchRangeUI();
-          fetchSearchableTweetsInRange(minVal, maxVal);
-      });
-  }
-
-  // キーワード・ユーザー名・#番号で、選択中の範囲(searchableTweets)の中から検索して表示する
-  function executeSearch() {
-      const searchInputEl = document.getElementById('searchInput');
-      const query = searchInputEl ? searchInputEl.value.trim() : '';
-      tweetStream.innerHTML = '';
-      tweetDomCache.clear();
-
-      if (!query) {
-          const rangeMinEl = document.getElementById('searchRangeMin');
-          const rangeMaxEl = document.getElementById('searchRangeMax');
-          const minVal = rangeMinEl ? rangeMinEl.value : 1;
-          const maxVal = rangeMaxEl ? rangeMaxEl.value : 1;
-          tweetStream.innerHTML = `<div class="search-hint">#${minVal} 〜 #${maxVal}（${Object.keys(searchableTweets).length}件）からキーワード・ユーザー名・#番号で検索できます</div>`;
-          return;
-      }
-
-      const numberMatch = query.match(/^#?(\d+)$/);
-      const targetNumber = numberMatch ? parseInt(numberMatch[1], 10) : null;
-      const lowerQuery = query.toLowerCase();
-
-      const sortedKeys = Object.keys(searchableTweets).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
-      const matchedKeys = sortedKeys.filter((key) => {
-          const data = searchableTweets[key];
-          if (!data) return false;
-          if (targetNumber !== null && Number(data.tweetNumber) === targetNumber) return true;
-          const textMatch = data.text && data.text.toLowerCase().includes(lowerQuery);
-          const nameMatch = data.name && data.name.toLowerCase().includes(lowerQuery);
-          return textMatch || nameMatch;
-      });
+      matchedKeys.sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
 
       if (matchedKeys.length === 0) {
           tweetStream.innerHTML = '<div class="search-hint">見つかりませんでした</div>';

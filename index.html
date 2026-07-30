@@ -104,16 +104,12 @@
 </form>
 
 <div id="searchFormContainer" style="display: none;">
-    <div id="searchRangeContainer">
-        <div id="searchRangeLabel">#<span id="searchRangeMinLabel">1</span> 〜 #<span id="searchRangeMaxLabel">100</span></div>
-        <div class="range-slider-wrapper">
-            <div class="range-slider-track"></div>
-            <div class="range-slider-track-active" id="searchRangeTrackActive"></div>
-            <input type="range" id="searchRangeMin" min="1" max="100" value="1">
-            <input type="range" id="searchRangeMax" min="1" max="100" value="100">
-        </div>
-    </div>
     <div id="searchInputRow">
+        <span>第</span>
+        <input type="number" id="searchRangeMin" value="1" min="1" placeholder="開始">
+        <span>〜</span>
+        <input type="number" id="searchRangeMax" value="100" min="1" placeholder="終了">
+        <span>件目</span>
         <input type="text" id="searchInput" placeholder="キーワード・ユーザー名・#番号で検索">
         <button type="button" id="searchExecuteBtn" onclick="executeSearch()">検索</button>
     </div>
