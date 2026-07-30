@@ -212,7 +212,9 @@
       }, RESIZE_DEBOUNCE_TIME);
   }
 
-  adjustOverallScale();
+  // 初回の adjustOverallScale() 呼び出しは、settings.js/timeline.js/comments.js の
+  // 読み込み完了後でないと中の参照(toggleLogDisplayCheckbox等)がエラーになるため、
+  // 最後に読み込まれる firebase.js 側で呼び出す。ここではイベント登録のみ行う。
   window.addEventListener('resize', debounceAdjustScale);
 
   // 画面回転（縦長⇔横長の切り替え）対応：

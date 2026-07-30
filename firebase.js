@@ -122,6 +122,11 @@ window.addEventListener('offline', updateConnectionStatus);
 updateConnectionStatus();
 // --- ここまで ---
 
+// 初回のレイアウト調整・ログ表示モード初期化
+// （settings.js内のinitializeLogDisplayModeは、内部でadjustOverallScale()を呼ぶため
+//   timeline.js/comments.js の読み込み完了後である必要があり、最後に読み込まれるここで呼び出す）
+initializeLogDisplayMode();
+
   // readCountは1件ごとにFirebaseへ書き込むと重くなるため、ローカルで貯めて500msごとにまとめて反映する
   let pendingReadCount = 0;
   let readCountFlushTimer = null;

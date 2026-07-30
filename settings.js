@@ -45,7 +45,8 @@
       toggleLogDisplayCheckbox.checked = initialDisplay;
       setLogDisplayMode(initialDisplay);
   }
-  initializeLogDisplayMode(); 
+  // 初回呼び出しは firebase.js 側で行う（setLogDisplayMode内のadjustOverallScale()が
+  // timeline.js/comments.js の読み込み完了を必要とするため）
 
   toggleLogDisplayCheckbox.addEventListener('change', (e) => {
       setLogDisplayMode(e.target.checked);
