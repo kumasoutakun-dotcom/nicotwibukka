@@ -608,6 +608,105 @@ button:disabled {
     font-weight: bold;
 }
 
+#searchFormContainer {
+    margin-bottom: 10px;
+}
+#searchRangeContainer {
+    background: #10283d;
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+}
+#searchRangeLabel {
+    font-family: 'k8x12S', sans-serif;
+    font-size: 20px;
+    color: #ccc;
+    text-align: center;
+    margin-bottom: 4px;
+}
+.range-slider-wrapper {
+    position: relative;
+    height: 26px;
+    margin: 0 9px;
+}
+.range-slider-track,
+.range-slider-track-active {
+    position: absolute;
+    top: 11px;
+    height: 4px;
+    border-radius: 2px;
+}
+.range-slider-track {
+    left: 0;
+    right: 0;
+    background: #0a1b2a;
+}
+.range-slider-track-active {
+    background: #4a90d9;
+}
+.range-slider-wrapper input[type="range"] {
+    position: absolute;
+    width: 100%;
+    left: 0;
+    top: 0;
+    margin: 0;
+    height: 26px;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    pointer-events: none;
+}
+.range-slider-wrapper input[type="range"]::-webkit-slider-runnable-track {
+    -webkit-appearance: none;
+    background: transparent;
+}
+.range-slider-wrapper input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    pointer-events: auto;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #4a90d9;
+    border: 2px solid #fff;
+    cursor: pointer;
+}
+.range-slider-wrapper input[type="range"]::-moz-range-track {
+    background: transparent;
+}
+.range-slider-wrapper input[type="range"]::-moz-range-thumb {
+    pointer-events: auto;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #4a90d9;
+    border: 2px solid #fff;
+    cursor: pointer;
+}
+#searchInputRow {
+    display: flex;
+    gap: 10px;
+}
+#searchInputRow #searchInput {
+    flex: 1;
+    min-width: 80px;
+}
+#searchExecuteBtn {
+    padding: 10px 20px;
+    font-size: 24px;
+    font-family: 'k8x12S', sans-serif;
+    background: #00ced1;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.search-hint {
+    padding: 20px;
+    text-align: center;
+    color: #888;
+}
+
 .tweet {
     background: #10283d;
     border-radius: 12px;

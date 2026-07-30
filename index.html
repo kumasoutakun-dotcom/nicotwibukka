@@ -103,9 +103,26 @@
     </div>
 </form>
 
+<div id="searchFormContainer" style="display: none;">
+    <div id="searchRangeContainer">
+        <div id="searchRangeLabel">#<span id="searchRangeMinLabel">1</span> 〜 #<span id="searchRangeMaxLabel">100</span></div>
+        <div class="range-slider-wrapper">
+            <div class="range-slider-track"></div>
+            <div class="range-slider-track-active" id="searchRangeTrackActive"></div>
+            <input type="range" id="searchRangeMin" min="1" max="100" value="1">
+            <input type="range" id="searchRangeMax" min="1" max="100" value="100">
+        </div>
+    </div>
+    <div id="searchInputRow">
+        <input type="text" id="searchInput" placeholder="キーワード・ユーザー名・#番号で検索">
+        <button type="button" id="searchExecuteBtn" onclick="executeSearch()">検索</button>
+    </div>
+</div>
+
             <div id="feedTabs">
                 <button type="button" id="tabNewBtn" class="feed-tab active-tab" onclick="switchFeedTab('new')">新着</button>
                 <button type="button" id="tabTrendBtn" class="feed-tab" onclick="switchFeedTab('trend')">話題</button>
+                <button type="button" id="tabSearchBtn" class="feed-tab" onclick="switchFeedTab('search')">検索</button>
             </div>
             <div id="tweetStream"></div>
             <div id="allUsers">
