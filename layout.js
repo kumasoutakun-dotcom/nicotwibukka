@@ -206,9 +206,15 @@
   }
 
   function debounceAdjustScale() {
+      console.log('[layout] resize検知、再計算を予約');
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
-          adjustOverallScale();
+          try {
+              adjustOverallScale();
+              console.log('[layout] adjustOverallScale実行完了');
+          } catch (e) {
+              console.error('[layout] adjustOverallScaleでエラー:', e);
+          }
       }, RESIZE_DEBOUNCE_TIME);
   }
 
