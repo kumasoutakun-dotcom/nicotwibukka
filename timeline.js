@@ -562,7 +562,56 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
   }
   // ▲ここまで▲
 
-  // DOMとコメント管理マップからツイートを削除するヘルパー関数
+  // 投稿フォームに「#数字」を入力した瞬間、引用元のプレビューを表示する（送信前に内容を確認できるように）
+  let quotePreviewTimer = null;
+  async function updateQuotePreview() {
+      const previewEl = document.getElementById('quotePreviewContainer');
+      if (!previewEl) return;
+
+      const commentInput = document.getElementById('comment');
+      const commentPart1 = document.getElementById('comment_part1');
+      const splitContainer = document.getElementById('splitInputContainer');
+      const isSplitMode = splitContainer && splitContainer.style.display !== 'none';
+      const text = (isSplitMode ? (commentPart1 ? commentPart1.value : '') : (commentInput ? commentInput.value : ''));
+
+      const match = text.match(/#(\d+)/);
+      if (!match) {
+          previewEl.style.display = 'none';
+          previewEl.innerHTML = '';
+          return;
+      }
+
+      const quoteNumber = parseInt(match[1], 10);
+      const found = await fetchQuotedTweetInfo(quoteNumber);
+
+      // 入力中にさらに文字が変わっている可能性があるので、今も同じ#番号を指しているか確認する
+      const currentText = (isSplitMode ? (commentPart1 ? commentPart1.value : '') : (commentInput ? commentInput.value : ''));
+      const currentMatch = currentText.match(/#(\d+)/);
+      if (!currentMatch || parseInt(currentMatch[1], 10) !== quoteNumber) return;
+
+      if (!found) {
+          previewEl.innerHTML = `<div class="quote-preview-header">#${quoteNumber} の投稿が見つかりません</div>`;
+          previewEl.style.display = 'block';
+          return;
+      }
+
+      const quotedName = (found.data.name && found.data.name.trim()) ? found.data.name : '名無し';
+      const snippet = buildQuotePlainSnippet(found.data);
+      previewEl.innerHTML = `<div class="quote-preview-header">#${quoteNumber} @${quotedName}</div><div class="quote-preview-body">${snippet}</div>`;
+      previewEl.style.display = 'block';
+  }
+
+  function scheduleQuotePreviewUpdate() {
+      clearTimeout(quotePreviewTimer);
+      quotePreviewTimer = setTimeout(updateQuotePreview, 300);
+  }
+
+  const commentInputForPreview = document.getElementById('comment');
+  const commentPart1ForPreview = document.getElementById('comment_part1');
+  if (commentInputForPreview) commentInputForPreview.addEventListener('input', scheduleQuotePreviewUpdate);
+  if (commentPart1ForPreview) commentPart1ForPreview.addEventListener('input', scheduleQuotePreviewUpdate);
+
+
   function removeTweetFromDOMAndMaps(key) {
       tweetDomCache.delete(key);
       const existingDiv = document.querySelector(`.tweet[data-key="${key}"]`);

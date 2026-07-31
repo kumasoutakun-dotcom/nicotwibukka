@@ -608,52 +608,24 @@ button:disabled {
     font-weight: bold;
 }
 
-#searchFormContainer {
+#quotePreviewContainer {
+    border-top: 2px dashed #4a90d9;
+    border-bottom: 2px dashed #4a90d9;
+    padding: 8px 12px;
     margin-bottom: 10px;
+    background: #0a1c2c;
+    border-radius: 4px;
 }
-#searchInputRow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-#searchInputRow span {
-    font-family: 'k8x12S', sans-serif;
-    font-size: 20px;
-    color: #ccc;
-    white-space: nowrap;
-}
-#searchInputRow input[type="number"] {
-    width: 70px;
+.quote-preview-header {
     font-family: 'k8x12S', sans-serif;
     font-size: 18px;
-    padding: 6px;
-    border-radius: 4px;
-    border: 1px solid #aaa;
-    background: #0d2236;
-    color: #fff;
-    flex: none;
-    min-width: unset;
+    color: #8ab4e8;
+    margin-bottom: 3px;
 }
-#searchInputRow #searchInput {
-    flex: 1;
-    min-width: 120px;
-}
-#searchExecuteBtn {
-    padding: 10px 20px;
-    font-size: 24px;
-    font-family: 'k8x12S', sans-serif;
-    background: #00ced1;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    flex-shrink: 0;
-}
-.search-hint {
-    padding: 20px;
-    text-align: center;
-    color: #888;
+.quote-preview-body {
+    color: #cfd8e3;
+    font-size: 20px;
+    overflow-wrap: anywhere;
 }
 
 .tweet {

@@ -338,6 +338,8 @@ if (predefinedColorSelect.value === 'rainbow') {
             } else {
                 commentInput.value = '';
             }
+            const quotePreviewEl = document.getElementById('quotePreviewContainer');
+            if (quotePreviewEl) { quotePreviewEl.style.display = 'none'; quotePreviewEl.innerHTML = ''; }
         }
         // ▲ここまで▲
 
@@ -498,11 +500,10 @@ if (predefinedColorSelect.value === 'rainbow') {
   }
 
   // =============================================
-  // 新着／話題／検索タブ切り替え
+  // 新着／話題タブ切り替え
   // =============================================
-  let currentFeedTab = 'new'; // 'new' | 'trend' | 'search'
+  let currentFeedTab = 'new'; // 'new' | 'trend'
   let likedTweetsQueryRef = null;
-  let searchableTweets = {}; // 検索タブ専用のデータ（直近100件のスナップショット）
 
   function stopLiveTweetListener() {
       db.ref('tweets').off();
@@ -520,16 +521,8 @@ if (predefinedColorSelect.value === 'rainbow') {
 
       const tabNewBtn = document.getElementById('tabNewBtn');
       const tabTrendBtn = document.getElementById('tabTrendBtn');
-      const tabSearchBtn = document.getElementById('tabSearchBtn');
       if (tabNewBtn) tabNewBtn.classList.toggle('active-tab', tab === 'new');
       if (tabTrendBtn) tabTrendBtn.classList.toggle('active-tab', tab === 'trend');
-      if (tabSearchBtn) tabSearchBtn.classList.toggle('active-tab', tab === 'search');
-
-      // 検索タブの時だけ、投稿フォームを検索欄に差し替える
-      const tweetFormEl = document.getElementById('tweetForm');
-      const searchFormEl = document.getElementById('searchFormContainer');
-      if (tweetFormEl) tweetFormEl.style.display = (tab === 'search') ? 'none' : '';
-      if (searchFormEl) searchFormEl.style.display = (tab === 'search') ? 'flex' : 'none';
 
       stopLiveTweetListener();
       stopTrendingLiveListener();
@@ -540,102 +533,10 @@ if (predefinedColorSelect.value === 'rainbow') {
       if (tab === 'new') {
           await loadInitialTweetsAndMonitorChanges();
           setupRealtimeListeners();
-      } else if (tab === 'trend') {
+      } else {
           await loadTrendingTweets();
           setupTrendingRealtimeListeners();
-      } else {
-          await loadSearchableTweets();
       }
-  }
-
-  // 検索タブ：開いた直後は「最新から直近100件」を範囲の初期値としてセットする（まだ取得はしない）
-  async function loadSearchableTweets() {
-      showLoading('検索の準備をしています…');
-      let latestNumber = 1;
-      try {
-          const totalSnapshot = await totalTweetCountRef.once('value');
-          await incrementReadCount();
-          latestNumber = totalSnapshot.val() || 1;
-      } catch (error) {
-          console.error("投稿数の取得に失敗しました:", error);
-      } finally {
-          hideLoading();
-      }
-
-      const rangeMinEl = document.getElementById('searchRangeMin');
-      const rangeMaxEl = document.getElementById('searchRangeMax');
-      const defaultMin = Math.max(1, latestNumber - 99);
-      if (rangeMinEl) rangeMinEl.value = defaultMin;
-      if (rangeMaxEl) rangeMaxEl.value = latestNumber;
-
-      tweetStream.innerHTML = `<div class="search-hint">範囲(第${defaultMin}〜${latestNumber}件目が初期値)とキーワードを指定して検索できます</div>`;
-      const searchInputEl = document.getElementById('searchInput');
-      if (searchInputEl) searchInputEl.focus();
-  }
-
-  // 指定範囲(tweetNumber)をFirebaseから取得し、キーワード・ユーザー名・#番号で絞り込んで表示する
-  async function executeSearch() {
-      const rangeMinEl = document.getElementById('searchRangeMin');
-      const rangeMaxEl = document.getElementById('searchRangeMax');
-      const searchInputEl = document.getElementById('searchInput');
-
-      let rangeMin = parseInt(rangeMinEl ? rangeMinEl.value : '1', 10);
-      let rangeMax = parseInt(rangeMaxEl ? rangeMaxEl.value : '1', 10);
-      if (isNaN(rangeMin)) rangeMin = 1;
-      if (isNaN(rangeMax)) rangeMax = rangeMin;
-      if (rangeMin > rangeMax) { const tmp = rangeMin; rangeMin = rangeMax; rangeMax = tmp; }
-      const query = searchInputEl ? searchInputEl.value.trim() : '';
-
-      tweetStream.innerHTML = '';
-      tweetDomCache.clear();
-      showLoading('検索中…');
-      try {
-          const snapshot = await db.ref('tweets').orderByChild('tweetNumber').startAt(rangeMin).endAt(rangeMax).once('value');
-          await incrementReadCount();
-          searchableTweets = snapshot.val() || {};
-      } catch (error) {
-          console.error("検索用データの読み込みに失敗しました:", error);
-          searchableTweets = {};
-      } finally {
-          hideLoading();
-      }
-
-      let matchedKeys = Object.keys(searchableTweets);
-      if (query) {
-          const numberMatch = query.match(/^#?(\d+)$/);
-          const targetNumber = numberMatch ? parseInt(numberMatch[1], 10) : null;
-          const lowerQuery = query.toLowerCase();
-          matchedKeys = matchedKeys.filter((key) => {
-              const data = searchableTweets[key];
-              if (!data) return false;
-              if (targetNumber !== null && Number(data.tweetNumber) === targetNumber) return true;
-              const textMatch = data.text && data.text.toLowerCase().includes(lowerQuery);
-              const nameMatch = data.name && data.name.toLowerCase().includes(lowerQuery);
-              return textMatch || nameMatch;
-          });
-      }
-      matchedKeys.sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
-
-      if (matchedKeys.length === 0) {
-          tweetStream.innerHTML = '<div class="search-hint">見つかりませんでした</div>';
-          return;
-      }
-
-      Object.assign(allTweets, searchableTweets);
-      matchedKeys.forEach((key, index) => {
-          appendTweetToStream(key, searchableTweets[key], index + 1, false);
-      });
-  }
-
-  // 検索欄でEnterキーを押した時も検索を実行する
-  const searchInputElAtLoad = document.getElementById('searchInput');
-  if (searchInputElAtLoad) {
-      searchInputElAtLoad.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-              e.preventDefault();
-              executeSearch();
-          }
-      });
   }
 
   // 話題タブ：likedTweets（👍が付いた投稿だけの索引）から新着順に最大100件を読み込む
