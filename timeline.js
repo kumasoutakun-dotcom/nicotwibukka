@@ -551,7 +551,11 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       const targetInput = isSplitMode ? document.getElementById('comment_part1') : document.getElementById('comment');
       if (!targetInput) return;
       const quoteTag = `#${tweetNumber} `;
-      if (!targetInput.value.startsWith(quoteTag)) {
+      const existingMarkerRegex = /#\d+\s*/;
+      if (existingMarkerRegex.test(targetInput.value)) {
+          // 既に「#番号」が入っていれば、それを新しい#番号に置き換える（併記はしない）
+          targetInput.value = targetInput.value.replace(existingMarkerRegex, quoteTag);
+      } else {
           targetInput.value = quoteTag + targetInput.value;
       }
       targetInput.focus();
@@ -559,6 +563,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       targetInput.setSelectionRange(len, len);
       const formEl = document.getElementById('tweetForm');
       if (formEl) formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      updateQuotePreview(); // ボタンから入れた時もその場でプレビュー表示する
   }
   // ▲ここまで▲
 
