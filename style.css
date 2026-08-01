@@ -626,6 +626,12 @@ button:disabled {
     color: #cfd8e3;
     font-size: 20px;
     overflow-wrap: anywhere;
+    max-height: 6em;
+    overflow: hidden;
+}
+.quote-preview-body .part-upper,
+.quote-preview-body .part-lower {
+    font-size: 18px !important;
 }
 
 .tweet {

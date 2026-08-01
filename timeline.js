@@ -601,8 +601,8 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       }
 
       const quotedName = (found.data.name && found.data.name.trim()) ? found.data.name : '名無し';
-      const snippet = buildQuotePlainSnippet(found.data);
-      previewEl.innerHTML = `<div class="quote-preview-header">#${quoteNumber} @${quotedName}</div><div class="quote-preview-body">${snippet}</div>`;
+      const bodyHtml = buildQuoteCardContentHtml(found.data);
+      previewEl.innerHTML = `<div class="quote-preview-header">#${quoteNumber} @${quotedName}</div><div class="quote-preview-body">${bodyHtml}</div>`;
       previewEl.style.display = 'block';
   }
 
