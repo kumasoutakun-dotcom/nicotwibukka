@@ -210,9 +210,14 @@ function getFloatingCommentYPosition(durationMs) { // durationMs が正確か確
 
     let targets = [];
     if (isJson) {
-        // JSON形式（アプリのJSON書き出し、またはFirebaseのJSONエクスポートと同じ { key: tweetData, ... } 形式）
+        // JSON形式に対応:
+        // ①アプリのJSON書き出し（{ key: tweetData, ... }そのもの）
+        // ②Firebaseの「JSONをエクスポート」で落としたルート丸ごと（{ tweets: {...}, config: {...}, quoteIndex: {...}, ... }）
         try {
-            const data = JSON.parse(rawText);
+            const parsed = JSON.parse(rawText);
+            const data = (parsed && typeof parsed === 'object' && parsed.tweets && typeof parsed.tweets === 'object')
+                ? parsed.tweets  // ルートエクスポートの場合は tweets ノードだけを取り出す
+                : parsed;        // それ以外は、渡されたオブジェクト自体が投稿一覧だとみなす
             const sortedKeys = Object.keys(data).sort((a, b) => (data[a].timestamp || 0) - (data[b].timestamp || 0));
             targets = sortedKeys
                 .map(key => data[key])
