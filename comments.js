@@ -193,7 +193,7 @@ function getFloatingCommentYPosition(durationMs) { // durationMs が正確か確
     const fileInput = document.getElementById('replayTxtFile');
     const status    = document.getElementById('replayStatus');
     if (!fileInput.files || fileInput.files.length === 0) {
-        status.textContent = 'txtファイルを選択してください';
+        status.textContent = 'txt/jsonファイルを選択してください';
         return;
     }
     if (replayTimer) stopReplay();
@@ -204,10 +204,37 @@ function getFloatingCommentYPosition(durationMs) { // durationMs が正確か確
     document.getElementById('replayStopBtn').disabled = false;
     status.textContent = 'ファイル読み込み中...';
 
-    const text = await fileInput.files[0].text();
-    const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
-    const targets = lines.map((l, i) => ({ line: l, idx: i }))
-                         .filter(({ line }) => parseTxtLine(line) !== null);
+    const file = fileInput.files[0];
+    const rawText = await file.text();
+    const isJson = file.name.toLowerCase().endsWith('.json');
+
+    let targets = [];
+    if (isJson) {
+        // JSON形式（アプリのJSON書き出し、またはFirebaseのJSONエクスポートと同じ { key: tweetData, ... } 形式）
+        try {
+            const data = JSON.parse(rawText);
+            const sortedKeys = Object.keys(data).sort((a, b) => (data[a].timestamp || 0) - (data[b].timestamp || 0));
+            targets = sortedKeys
+                .map(key => data[key])
+                .filter(t => t && t.text)
+                .map(t => ({
+                    text: t.text,
+                    color: t.color || '#ffffff',
+                    type: t.type || 'normal',
+                    size: t.size || 'medium'
+                }));
+        } catch (e) {
+            status.textContent = 'JSONの読み込みに失敗しました（形式が違う可能性があります）';
+            document.getElementById('replayTxtStartBtn').disabled = false;
+            document.getElementById('replayStartBtn').disabled = false;
+            document.getElementById('replayStopBtn').disabled = true;
+            return;
+        }
+    } else {
+        // txt形式（アプリのtxt書き出しと同じ「#番号 [日時] 名前: 内容 |color:...|type:...|size:...」形式）
+        const lines = rawText.split(/\r?\n/).filter(l => l.trim() !== '');
+        targets = lines.map(l => parseTxtLine(l)).filter(t => t !== null);
+    }
 
     if (targets.length === 0) {
         status.textContent = '再生できる投稿がありません（形式が違う可能性があります）';
@@ -224,8 +251,7 @@ function getFloatingCommentYPosition(durationMs) { // durationMs が正確か確
             stopReplay();
             return;
         }
-        const { line } = targets[idx];
-        const parsed = parseTxtLine(line);
+        const parsed = targets[idx];
         status.textContent = `再現中: ${idx + 1} / ${targets.length}件目`;
         if (parsed) {
             const key = 'txt_' + idx + '_' + Date.now();

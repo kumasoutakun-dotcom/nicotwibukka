@@ -131,8 +131,8 @@
                 <!-- txtファイルモード -->
                 <div class="replay-row" style="margin-top:6px;">
                     <label style="white-space:nowrap;">📂 txtファイル:</label>
-                    <input type="file" id="replayTxtFile" accept=".txt" style="flex:1; min-width:0; font-size:13px; padding:4px 6px;">
-                    <button id="replayTxtStartBtn">▶ txt再生</button>
+                    <input type="file" id="replayTxtFile" accept=".txt,.json" style="flex:1; min-width:0; font-size:13px; padding:4px 6px;">
+                    <button id="replayTxtStartBtn">▶ ファイル再生</button>
                 </div>
                 <div id="replayStatus"></div>
             </div>
@@ -150,6 +150,10 @@
     <div id="exportModal">
         <div id="exportModalBox">
             <h3>📥 履歴の書き出し範囲</h3>
+            <div id="exportFormatRow">
+                <label><input type="radio" name="exportFormat" value="txt" checked> txt</label>
+                <label><input type="radio" name="exportFormat" value="json"> JSON</label>
+            </div>
             <button class="export-option-btn" id="exportBtnRecent" onclick="runExport('recent')">
                 📋 直近100件（メモリ上のデータ）
             </button>

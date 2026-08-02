@@ -711,6 +711,49 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
     setTimeout(closeExportModal, 1200);
   }
 
+  /**
+   * tweetsデータ（オブジェクト）をJSONのままダウンロードする。
+   * FirebaseのJSONエクスポート/インポートと同じ「{key: tweetData, ...}」形式なので、
+   * そのままFirebaseへの再インポートにも使える。txt書き出しと違い、全フィールドを保持する（無劣化）。
+   * @param {Object} tweetsObj  - { key: tweetData, ... }
+   * @param {string} suffix     - ファイル名サフィックス（'recent' | 'today' | 'all'）
+   */
+  function downloadTweetsAsJson(tweetsObj, suffix) {
+    const keyCount = Object.keys(tweetsObj).length;
+    if (keyCount === 0) {
+        document.getElementById('exportModalStatus').textContent = '該当する投稿がありません。';
+        return;
+    }
+
+    const jsonStr = JSON.stringify(tweetsObj, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const fileName = `nicotwi_${suffix}_${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}.json`;
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    document.getElementById('exportModalStatus').textContent = `✅ ${keyCount}件をJSONで書き出しました`;
+    setTimeout(closeExportModal, 1200);
+  }
+
+  // 選択中の書き出し形式（txt/json）にあわせて、どちらかの関数を呼び分ける
+  function downloadTweetsInSelectedFormat(tweetsObj, suffix) {
+    const checked = document.querySelector('input[name="exportFormat"]:checked');
+    const format = checked ? checked.value : 'txt';
+    if (format === 'json') {
+        downloadTweetsAsJson(tweetsObj, suffix);
+    } else {
+        downloadTweetsAsTxt(tweetsObj, suffix);
+    }
+  }
+
   async function runExport(mode) {
     const statusEl = document.getElementById('exportModalStatus');
     // ボタンをローディング状態に
@@ -723,7 +766,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
     if (mode === 'recent') {
         // メモリ上のallTweets（直近100件）をそのまま使う
         statusEl.textContent = '準備中...';
-        downloadTweetsAsTxt(allTweets, 'recent');
+        downloadTweetsInSelectedFormat(allTweets, 'recent');
 
     } else if (mode === 'today') {
         // Firebaseから全件取得し、今日（JST）のものだけ絞り込む
@@ -738,7 +781,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
                 const t = child.val();
                 if ((t.timestamp || 0) >= todayStartJST) todayObj[child.key] = t;
             });
-            downloadTweetsAsTxt(todayObj, 'today');
+            downloadTweetsInSelectedFormat(todayObj, 'today');
         } catch (e) {
             statusEl.textContent = '取得失敗: ' + e.message;
             return;
@@ -751,7 +794,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
             const snapshot = await db.ref('tweets').orderByKey().once('value');
             await incrementReadCount();
             const data = snapshot.val() || {};
-            downloadTweetsAsTxt(data, 'all');
+            downloadTweetsInSelectedFormat(data, 'all');
         } catch (err) {
             console.error('全件取得エラー:', err);
             statusEl.textContent = '❌ 取得に失敗しました。';

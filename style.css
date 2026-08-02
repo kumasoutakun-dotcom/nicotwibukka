@@ -1129,6 +1129,19 @@ body.rainbow-anim-off .rainbow-char:nth-of-type(6n+6) { color: #BF00FF !importan
     font-size: 24px;
     text-align: center;
 }
+#exportFormatRow {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    font-size: 20px;
+    margin-bottom: 4px;
+}
+#exportFormatRow label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
 .export-option-btn {
     padding: 12px 16px;
     font-size: 24px;
