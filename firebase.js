@@ -799,7 +799,7 @@ if (predefinedColorSelect.value === 'rainbow') {
                     console.error("初期化に失敗しました:", error);
                     setFormEnabled(false);
                     usageWarningDiv.style.display = 'block';
-                    usageWarningDiv.innerHTML = 'バージョンチェックに失敗しました。<br>インターネット接続を確認してください。';
+                    usageWarningDiv.innerHTML = 'バージョンチェックに失敗しました。<br>インターネット接続を確認してください。<br>最新版は <a href="https://omochinomocchili.github.io/nicotwi-bukka/" target="_blank" rel="noopener noreferrer" style="color:#fff;text-decoration:underline;font-weight:bold;">こちらから利用できます</a>。';
                 }
             }
         }
