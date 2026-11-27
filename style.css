@@ -2303,3 +2303,65 @@ textarea {
 .tweet .toggle-text-button {
     margin-top: 0;
 }
+
+
+/* 投稿再現スライダーをMaterial 3風に */
+#replayPanel input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    width: 112px;
+    min-width: 76px;
+    min-height: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    accent-color: #a9c9f5;
+    cursor: pointer;
+    touch-action: pan-y;
+}
+#replayPanel input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: #536477;
+}
+#replayPanel input[type="range"]::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background: #536477;
+}
+#replayPanel input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    margin-top: -8px;
+    border: 6px solid #a9c9f5;
+    border-radius: 50%;
+    background: #263b52;
+    box-shadow: 0 1px 3px rgba(0,0,0,.35);
+    transition: box-shadow 140ms ease, transform 140ms ease;
+}
+#replayPanel input[type="range"]::-moz-range-thumb {
+    width: 8px;
+    height: 8px;
+    border: 6px solid #a9c9f5;
+    border-radius: 50%;
+    background: #263b52;
+    box-shadow: 0 1px 3px rgba(0,0,0,.35);
+    transition: box-shadow 140ms ease, transform 140ms ease;
+}
+#replayPanel input[type="range"]:hover::-webkit-slider-thumb {
+    box-shadow: 0 0 0 8px rgba(169,201,245,.12), 0 1px 3px rgba(0,0,0,.35);
+}
+#replayPanel input[type="range"]:active::-webkit-slider-thumb {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 10px rgba(169,201,245,.18);
+}
+#replayPanel input[type="range"]:focus-visible {
+    outline: 2px solid #a9c9f5;
+    outline-offset: 3px;
+    border-radius: 999px;
+}
