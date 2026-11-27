@@ -30,20 +30,34 @@
 
 html {
     background: #0a1b2a;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    /* モバイルブラウザの「読みやすさのための自動文字拡大」を無効化。
+       このアプリは独自にscale/フォントサイズを計算しているため、
+       ブラウザ側の自動拡大と二重にかかってしまうと画面全体が異常に
+       大きくなる（特に横長で顕著）。 */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 body {
     margin: 0;
     padding: 0;
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh; /* モバイルのアドレスバー等でvhとの誤差が出ても隙間ができないように */
-    overflow: hidden;
+    /* width/heightを固定しない: #containerはtransform:scaleで縮小される前提で
+       わざと画面より大きく作られている。bodyを画面サイズぴったりに固定して
+       overflow:hiddenをかけると、縮小が適用される前の(大きいままの)段階で
+       中身が切り取られてしまう(ヘッダーやtwiAreaが消える原因になっていた)。
+       クリッピングは<html>側のoverflow:hiddenに任せ、bodyは中身のサイズに
+       そのまま追従させる。 */
+    overflow: visible;
     background: #0a1b2a; /* スクロール時などに下に隙間が見えても白飛びしないようにする保険 */
     font-family: 'GenZenGothicKaiC', sans-serif;
     font-size: 24px;
     transform-origin: 0 0;
     transform: scale(1);
     box-sizing: border-box;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 /* ドット投稿：美咲ゴシック第2フォント */
@@ -52,8 +66,14 @@ body {
 }
 
 #container {
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    /* 横長(デフォルト): 左カラム = nicoArea(上)+フォーム(下) / 右カラム = ヘッダー(上)+twiArea(下) */
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+        "nico   header"
+        "nico   twi"
+        "form   twi";
     background: #0a1b2a;
     width: 100%;
     height: 100%;
@@ -64,16 +84,45 @@ body {
     position: relative;
 }
 
-@media (max-aspect-ratio: 1/1) {
-    #container { flex-direction: column; }
-    #nicoArea { flex: 2; }
-    #twiArea { flex: 1; }
-    .tweet { font-size: 33px; } /* 縦長は少し大きめ */
+@media (max-aspect-ratio: 2/3) {
+    #container {
+        /* 縦長: 1カラムで上から nicoArea → ヘッダー → フォーム → twiArea の順に積む */
+        grid-template-columns: 1fr;
+        grid-template-rows: 2fr auto auto 1fr;
+        grid-template-areas:
+            "nico"
+            "header"
+            "form"
+            "twi";
+    }
+    /* .tweetの縦長時フォントサイズは、基本ルールより後ろに置く必要があるため下のセクションで指定 */
+}
+
+/* 正方形帯(1:1付近): 縦長・横長どちらとも言えない比率のときの第3レイアウト。
+   上段にnicoAreaを固定高さ(layout.jsのapplyImmediateLayout()側で
+   画面高さ×9/32を設定)で置き、下段を左(ヘッダー+フォーム)/右(twiArea)に分割する。
+   縦長・横長それぞれのgrid-template自体はこのブロックの外なので変更していない。
+   2/3〜3/2 (約0.667〜1.5) の範囲を「正方形」とみなす。 */
+@media (min-aspect-ratio: 2/3) and (max-aspect-ratio: 3/2) {
+    #container {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 9fr auto 1fr; /* 実際の比率(9/32)はJS側で明示的なpx指定に上書きされる */
+        grid-template-areas:
+            "nico   nico"
+            "header twi"
+            "form   twi";
+    }
 }
 
 /* コメントのみモード */
-body.comment-only #container { flex-direction: column; }
-body.comment-only #nicoArea { flex: 1; width: 100%; }
+body.comment-only #container {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    grid-template-areas: "nico";
+}
+body.comment-only #nicoArea { width: 100%; }
+body.comment-only #headerSection,
+body.comment-only #formArea,
 body.comment-only #twiArea,
 body.comment-only #concurrentUsers { display: none; }
 
@@ -83,10 +132,10 @@ body.comment-only #concurrentUsers { display: none; }
    ============================================================= */
 
 #nicoArea {
+    grid-area: nico;
     background: #001f33;
     color: white;
     position: relative;
-    flex: 1;
     display: flex;
     flex-direction: column;
     z-index: 1;
@@ -243,7 +292,9 @@ body.comment-only #concurrentUsers { display: none; }
    ============================================================= */
 
 #twiArea {
-    flex: 1;
+    grid-area: twi;
+    min-width: 0;
+    min-height: 0;
     padding: 25px;
     overflow-y: auto;
     background: #0a1b2a;
@@ -251,16 +302,36 @@ body.comment-only #concurrentUsers { display: none; }
 }
 
 #headerSection {
+    grid-area: header;
     display: flex;
     align-items: center;
     justify-content: flex-start;
     margin-bottom: 0;
-    padding-top: 0;
+    padding: 25px 25px 0 25px;
     position: relative;
     gap: 0;
+    color: white; /* twiAreaの外に出たためcolor:whiteの継承が切れる分をここで補う */
+    min-width: 0;  /* h1(white-space:nowrap)の最小コンテンツ幅がgridの列幅を押し広げるのを防ぐ */
+    min-height: 0;
 }
 
-#twiArea h1 {
+/* 投稿フォーム＋引用プレビューをまとめて左カラム下部に配置 */
+#formArea {
+    grid-area: form;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 25px;
+}
+
+@media (max-aspect-ratio: 2/3) {
+    /* 縦長ではformArea・twiAreaが縦に隣接するため、双方の25pxパディングが
+       合算されて隙間が広がりすぎる。twiArea側の上パディングだけに任せる。
+       正方形帯ではform/twiが縦に隣接しない(左下/右側の配置)ため対象外。 */
+    #formArea { padding-bottom: 0; }
+}
+
+#headerSection h1 {
     font-family: 'k8x12S', sans-serif;
     text-align: left;
     margin: 0;
@@ -269,6 +340,14 @@ body.comment-only #concurrentUsers { display: none; }
     flex-grow: 1;
     white-space: nowrap;
     overflow: hidden;
+}
+
+/* h1がロゴ画像の場合: 幅はJS(layout.jsのbalanceHeader)が直接style.widthを
+   指定するので、ブラウザ側のimg既定の縮小・引き延ばしが起きないようにする */
+#headerSection h1 img {
+    display: block;
+    max-width: none;
+    height: auto;
 }
 
 /* TOP3ランキング */
@@ -403,17 +482,27 @@ body.comment-only #concurrentUsers { display: none; }
     padding-left: 20px;
     margin: 0;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: wrap; /* 横に余裕があれば自然に複数個並び、足りなければ折り返す */
 }
 #allUsers li {
     font-size: 24px;
     margin-bottom: 8px;
     margin-right: 15px;
-    white-space: nowrap;
+    display: flex; /* .rank-name と .rank-count を横並びにする */
+    align-items: baseline;
+    gap: 4px;
+    max-width: 100%; /* 1件だけで行幅を超える極端なケースの保険 */
+    min-width: 0; /* 子要素(.rank-name)を内容幅未満に縮められるようにする */
+}
+#allUsers li .rank-name {
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: calc(50% - 25px);
-    flex-grow: 1;
+    white-space: nowrap;
+    min-width: 0; /* flexアイテムでellipsisを効かせるために必要 */
+}
+#allUsers li .rank-count {
+    flex-shrink: 0; /* 件数側は縮めない・省略しない */
+    white-space: nowrap;
 }
 
 /* 警告メッセージ */
@@ -622,6 +711,9 @@ button:disabled {
     color: #8ab4e8;
     margin-bottom: 3px;
 }
+.quote-preview-header .quote-preview-name {
+    font-family: 'GenZenGothicKaiC', sans-serif;
+}
 .quote-preview-body {
     color: #cfd8e3;
     font-size: 20px;
@@ -635,14 +727,35 @@ button:disabled {
 }
 
 .tweet {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+        "namegroup namegroup"
+        "quote quote"
+        "content content"
+        "logactions logactions"
+        "actions timestamp";
+    row-gap: 2px;
+    column-gap: 8px;
+    align-items: center;
     background: #10283d;
     border-radius: 12px;
     padding: 8px 15px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     margin-bottom: 8px;
-    font-size: 27px; /* 横長(デフォルト)は少し小さめ */
+    font-size: 24px; /* 横長(デフォルト)は少し小さめ */
     overflow: visible;
 }
+@media (max-aspect-ratio: 2/3) {
+    .tweet { font-size: 30px; } /* 縦長は少し大きめ */
+}
+.tweet-meta-namegroup { grid-area: namegroup; }
+.tweet-meta-timestamp { grid-area: timestamp; justify-self: end; }
+.tweet-meta-actions { grid-area: actions; justify-self: start; }
+.tweet .quote-card { grid-area: quote; }
+.tweet .tweet-text-content { grid-area: content; }
+.tweet .log-actions { grid-area: logactions; }
+.tweet .toggle-text-button { grid-area: logactions; }
 
 /* 引用カード（quote機能） */
 .quote-card {
@@ -725,33 +838,40 @@ button:disabled {
     color: #aaa;
     font-family: 'k8x12S', sans-serif;
     font-size: 24px;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 .quote-number:hover {
     text-decoration: underline;
     color: #7ab8f5;
 }
-.requote-btn {
-    margin-left: 10px;
-}
 .requote-btn:hover {
     color: #7ab8f5 !important;
 }
 
-.tweet-header {
+.tweet-meta-namegroup {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 8px;
-    margin-bottom: 0;
-    overflow: visible;
+    min-width: 0;
+    overflow: hidden;
     padding-bottom: 3px; /* 名前のディセンダークリッピング防止 */
 }
-.tweet strong {
+.tweet-meta-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.tweet-username {
     font-size: 22px;
-    font-weight: normal; /* <strong>のデフォルトboldを解除（合成ボールドで潰れて見える対策） */
-    white-space: nowrap;
+    font-weight: normal;
+    font-family: 'GenZenGothicKaiC', sans-serif;
+    color: #fff;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-family: 'GenZenGothicKaiC', sans-serif;
+    white-space: nowrap;
+    min-width: 0; /* flexアイテムを縮められるようにする（無いと省略が効かない） */
+    flex-shrink: 1;
     padding-bottom: 4px; /* ディセンダークリッピング防止 */
 }
 .tweet p {
@@ -784,34 +904,27 @@ button:disabled {
     color: #87CEEB;
     cursor: pointer;
     font-size: 22px;
+    font-family: 'k8x12S', sans-serif;
     padding: 0;
     margin-top: 5px;
     display: block;
-    text-align: right;
+    text-align: left;
 }
-.tweet-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 0;
-}
-.tweet .actions button {
+.tweet-meta-actions .reaction-btn,
+.tweet-meta-actions .requote-btn {
     font-size: 24px;
     background: transparent;
     color: #ccc;
     border: none;
     cursor: pointer;
     padding: 0;
+    white-space: nowrap;
 }
-.timestamp {
+.tweet-meta-timestamp {
     font-size: 24px;
     color: #aaa;
-    text-align: right;
     font-family: 'k8x12S', sans-serif;
-}
-/* ドット投稿でも日時は通常フォント */
-.dot-font .timestamp {
-    font-family: 'GenZenGothicKaiC', sans-serif;
+    white-space: nowrap;
 }
 
 
@@ -891,6 +1004,19 @@ button:disabled {
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     text-overflow: ellipsis;
+}
+
+/* -webkit-line-clampで省略表示中の要素をロングタップ選択し、
+   クランプ範囲より下までドラッグすると、ブラウザが本来隠れているはずの
+   範囲まで描画してしまい表示が崩れることがある。実際に省略が効いていて
+   「もっと見る」が表示されている場合だけ選択を無効化し、短くて
+   省略の必要がない投稿はこれまで通り選択できるようにする。 */
+.tweet-text-content:not(.expanded):not(.no-toggle),
+.quote-card-body:has(+ .quote-card-toggle):not(.quote-card-expanded),
+.log-content.shortened,
+.log-content.shortened-5000 {
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 /* もっと見る / 折りたたむボタン */
@@ -1000,17 +1126,35 @@ body.rainbow-anim-off .rainbow-char:nth-of-type(6n+6) { color: #BF00FF !importan
 }
 
 /* 投稿ログ（tweetStream）側の文字サイズ（小・中・大） */
-.tweet-text-content.size-small { font-size: 20px; }
-.tweet-text-content.size-medium { font-size: 30px; }
-.tweet-text-content.size-large { font-size: 42px; }
+.tweet-text-content.size-small { font-size: 18px; }
+.tweet-text-content.size-medium { font-size: 27px; }
+.tweet-text-content.size-large { font-size: 38px; }
 
 .tweet-text-content.size-small .part-upper,
 .tweet-text-content.size-small .part-lower {
-    font-size: 21px !important;
+    font-size: 19px !important;
 }
 .tweet-text-content.size-large .part-upper,
 .tweet-text-content.size-large .part-lower {
-    font-size: 44px !important;
+    font-size: 40px !important;
+}
+
+@media (max-aspect-ratio: 2/3) {
+    /* .tweet本体と同じ比率で縦長時に本文サイズも拡大する。
+       ここが無いと、chrome(ユーザー名等)だけ大きくなり本文が相対的に
+       小さく見えてしまう */
+    .tweet-text-content.size-small { font-size: 22px; }
+    .tweet-text-content.size-medium { font-size: 33px; }
+    .tweet-text-content.size-large { font-size: 46px; }
+
+    .tweet-text-content.size-small .part-upper,
+    .tweet-text-content.size-small .part-lower {
+        font-size: 23px !important;
+    }
+    .tweet-text-content.size-large .part-upper,
+    .tweet-text-content.size-large .part-lower {
+        font-size: 49px !important;
+    }
 }
 
 

@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
   <title>nicotwi物化 ver1.7.7</title>
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="style.css">
@@ -31,79 +32,82 @@
             <div id="logContainer"></div>
         </div>
 
-        <div id="twiArea">
-            <div id="headerSection">
-                <h1>nicotwi物化</h1>
-                <div id="topUsers">
-                    <h3>直近100件の投稿者　3選</h3>
-                    <ul id="topUserList">
-                        <li id="top-rank-1">1位: ―</li>
-                        <li id="top-rank-2">2位: ―</li>
-                        <li id="top-rank-3">3位: ―</li>
-                    </ul>
-                </div>
+        <div id="headerSection">
+            <h1><img id="headerLogo" src="header-logo.png" alt="nicotwi物化"></h1>
+            <div id="topUsers">
+                <h3>直近100件の投稿者　3選</h3>
+                <ul id="topUserList">
+                    <li id="top-rank-1">1位: ―</li>
+                    <li id="top-rank-2">2位: ―</li>
+                    <li id="top-rank-3">3位: ―</li>
+                </ul>
             </div>
-            
-            <div id="usageWarning"></div>
-
-　　　　<div id="connectionStatus" style="color: #ff4d4d; background-color: rgba(255, 0, 0, 0.1); padding: 5px 10px; border-radius: 5px; margin-bottom: 10px; display: none; text-align: center; font-weight: bold;">
-    接続がありません
-</div>
-<form id="tweetForm">
-    <input type="text" id="nickname" placeholder="名前(匿名歓迎)" required>
-    <input type="text" id="comment" placeholder="つぶやこう！" maxlength="140" required>
-<div id="splitInputContainer" style="display: none; flex-direction: column; width: 100%; gap: 10px; margin-top: 10px;">
-    <input type="text" id="comment_part1" placeholder="前半（朱色・赤）" maxlength="70">
-    <input type="text" id="comment_part2" placeholder="後半（銀・藍）" maxlength="70">
-</div>
-
-    <div class="form-row">
-        <span class="form-field">
-            <label for="commentType">形式</label>
-            <select id="commentType">
-                <option value="normal" selected>通常</option>
-                <option value="center_fixed">中央</option>
-            </select>
-        </span>
-
-        <span class="form-field">
-            <label for="commentSize">大きさ</label>
-            <select id="commentSize">
-                <option value="small">小</option>
-                <option value="medium" selected>中</option>
-                <option value="large">大</option>
-            </select>
-        </span>
-
-        <span class="form-field">
-            <label for="predefinedColor">文字</label>
-            <select id="predefinedColor">
-               <option value="#FFFFFF" selected>白</option>
-               <option value="#FF0000">赤</option>
-               <option value="#FFFF00">黄</option>
-               <option value="#00FFFF">シアン</option>
-               <option value="#00FF00">緑</option>
-               <option value="rainbow">虹色</option>
-               <option value="custom">カスタム</option>
-               <option value="split_custom">五千兆</option>
-               <option value="dot">ドット</option>
-            </select>
-        </span>
-
-        <div id="colorPickerContainer">
-            <label for="commentColorPicker">カスタムカラー:</label>
-            <input type="color" id="commentColorPicker" value="#FFFFFF">
         </div>
 
-        <input type="hidden" id="parentKey" value="">
-        <span class="button-group">
-            <button type="button" id="clearInputBtn" onclick="(function(){ document.getElementById('comment').value=''; document.getElementById('comment_part1').value=''; document.getElementById('comment_part2').value=''; const p=document.getElementById('quotePreviewContainer'); if(p){p.style.display='none'; p.innerHTML='';} })()">クリア</button>
-            <button type="submit">投稿</button>
-        </span>
-    </div>
-</form>
+        <div id="formArea">
+            <form id="tweetForm">
+                <input type="text" id="nickname" placeholder="名前(匿名歓迎)" required>
+                <input type="text" id="comment" placeholder="つぶやこう！" maxlength="140" required>
+                <div id="splitInputContainer" style="display: none; flex-direction: column; width: 100%; gap: 10px; margin-top: 10px;">
+                    <input type="text" id="comment_part1" placeholder="前半（朱色・赤）" maxlength="70">
+                    <input type="text" id="comment_part2" placeholder="後半（銀・藍）" maxlength="70">
+                </div>
 
-<div id="quotePreviewContainer" style="display: none;"></div>
+                <div class="form-row">
+                    <span class="form-field">
+                        <label for="commentType">形式</label>
+                        <select id="commentType">
+                            <option value="normal" selected>通常</option>
+                            <option value="center_fixed">中央</option>
+                        </select>
+                    </span>
+
+                    <span class="form-field">
+                        <label for="commentSize">大きさ</label>
+                        <select id="commentSize">
+                            <option value="small">小</option>
+                            <option value="medium" selected>中</option>
+                            <option value="large">大</option>
+                        </select>
+                    </span>
+
+                    <span class="form-field">
+                        <label for="predefinedColor">文字</label>
+                        <select id="predefinedColor">
+                           <option value="#FFFFFF" selected>白</option>
+                           <option value="#FF0000">赤</option>
+                           <option value="#FFFF00">黄</option>
+                           <option value="#00FFFF">シアン</option>
+                           <option value="#00FF00">緑</option>
+                           <option value="rainbow">虹色</option>
+                           <option value="custom">カスタム</option>
+                           <option value="split_custom">五千兆</option>
+                           <option value="dot">ドット</option>
+                        </select>
+                    </span>
+
+                    <div id="colorPickerContainer">
+                        <label for="commentColorPicker">カスタムカラー:</label>
+                        <input type="color" id="commentColorPicker" value="#FFFFFF">
+                    </div>
+
+                    <input type="hidden" id="parentKey" value="">
+                    <span class="button-group">
+                        <button type="button" id="clearInputBtn" onclick="(function(){ document.getElementById('comment').value=''; document.getElementById('comment_part1').value=''; document.getElementById('comment_part2').value=''; const p=document.getElementById('quotePreviewContainer'); if(p){p.style.display='none'; p.innerHTML='';} })()">クリア</button>
+                        <button type="submit">投稿</button>
+                    </span>
+                </div>
+            </form>
+
+            <div id="quotePreviewContainer" style="display: none;"></div>
+        </div>
+
+        <div id="twiArea">
+            <div id="usageWarning"></div>
+
+            <div id="connectionStatus" style="color: #ff4d4d; background-color: rgba(255, 0, 0, 0.1); padding: 5px 10px; border-radius: 5px; margin-bottom: 10px; display: none; text-align: center; font-weight: bold; font-family: 'k8x12S', sans-serif;">
+    接続がありません
+</div>
 
             <div id="feedTabs">
                 <button type="button" id="tabNewBtn" class="feed-tab active-tab" onclick="switchFeedTab('new')">新着</button>
@@ -139,7 +143,7 @@
 
             <div id="adminPanel">
                 <button onclick="openExportModal()" style="background:#f0c000; color:#222; font-family:'k8x12S',sans-serif; font-size:20px; padding:10px 20px; border:none; border-radius:5px; cursor:pointer;">📥 履歴をtxtで書き出し</button>
-                <div class="credit">制作者: 神奈川県立厚木高校79期　物理化学部コンピュータ班及び無線班　熊澤蒼太<br>何かあれば<a href="https://github.com/kumasoutakun-dotcom/nicotwibukka/issues" target="_blank" rel="noopener">https://github.com/kumasoutakun-dotcom/nicotwibukka/issues</a>まで</div>
+                <div class="credit">制作者: 神奈川県立厚木高校79期　物理化学部コンピュータ班及び無線班　熊澤蒼太<br>GitHub：<a href="https://github.com/omochinomocchili/nicotwi-bukka" target="_blank" rel="noopener">https://github.com/omochinomocchili/nicotwi-bukka</a></div>
             </div>
         </div>
         
@@ -171,6 +175,7 @@
 
 
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.6/purify.min.js"></script>
 <script src="utils.js"></script>
