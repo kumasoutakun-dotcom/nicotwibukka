@@ -2365,3 +2365,14 @@ textarea {
     outline-offset: 3px;
     border-radius: 999px;
 }
+
+
+/* 引用投稿内のリアクションボタンは全体ボタンの最小高さ指定より優先して極小化 */
+.quote-card .quote-card-actions button {
+    box-sizing: border-box;
+    min-height: 14px !important;
+    height: 14px !important;
+    padding: 0 2px !important;
+    line-height: 14px !important;
+    font-size: 0.72em !important;
+}
