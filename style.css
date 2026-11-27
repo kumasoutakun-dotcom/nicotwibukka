@@ -2031,3 +2031,84 @@ textarea {
     min-height: 38px;
     padding: 6px 12px;
 }
+
+
+/* =============================================================
+   17. 表示設定サイドバー
+   ============================================================= */
+#utilitySidebar {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 120;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    font-family: 'k8x12S', sans-serif;
+}
+#utilitySidebarToggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    border: 1px solid var(--m3-outline, rgba(255,255,255,.28));
+    border-radius: 16px;
+    background: rgba(26, 58, 90, .94);
+    color: #fff;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,.28), inset 0 1px 1px rgba(255,255,255,.08);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+#utilitySidebarToggle:active {
+    transform: scale(.94);
+}
+.utility-sidebar-content {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 9px;
+    border: 1px solid var(--m3-outline, rgba(255,255,255,.28));
+    border-radius: 20px;
+    background: rgba(10, 27, 42, .92);
+    box-shadow: 0 8px 24px rgba(0,0,0,.32), inset 0 1px 1px rgba(255,255,255,.05);
+    backdrop-filter: blur(18px) saturate(1.15);
+    -webkit-backdrop-filter: blur(18px) saturate(1.15);
+}
+.utility-sidebar-content[hidden] {
+    display: none !important;
+}
+#utilitySidebar .toggleLogDisplayContainer,
+#utilitySidebar .toggleSpeechContainer,
+#utilitySidebar .toggleRainbowContainer,
+#utilitySidebar #toggleLogDisplayContainer,
+#utilitySidebar #toggleSpeechContainer,
+#utilitySidebar #toggleRainbowContainer {
+    position: static;
+    left: auto;
+    top: auto;
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 11px;
+    gap: 9px;
+    opacity: 1;
+    border-radius: 13px;
+    background: rgba(255,255,255,.055);
+    box-shadow: none;
+    white-space: nowrap;
+}
+#utilitySidebar #toggleLogDisplayContainer label,
+#utilitySidebar #toggleSpeechContainer label,
+#utilitySidebar #toggleRainbowContainer label {
+    font-size: 17px;
+}
+#utilitySidebar input[type="checkbox"] {
+    transform: scale(1.2);
+}
