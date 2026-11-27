@@ -2269,3 +2269,14 @@ textarea {
         transition: none !important;
     }
 }
+
+
+/* 引用カード内のアクションを右端にまとめる */
+.quote-card-header { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
+.quote-card-author { display:inline-flex; align-items:center; gap:4px; min-width:0; overflow:hidden; }
+.quote-card-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.quote-card-actions { display:inline-flex; align-items:center; justify-content:flex-end; gap:3px; flex:0 0 auto; margin-left:auto; }
+.quote-card-actions button { display:inline-flex; align-items:center; justify-content:center; min-width:28px; min-height:26px; padding:2px 5px; border:0; border-radius:999px; background:transparent; color:#aab7c4; font:inherit; font-size:.88em; line-height:1; cursor:pointer; transition:background-color 120ms ease,color 120ms ease; }
+.quote-card-actions button:hover:not(:disabled) { background:rgba(138,180,232,.14); color:#d9eaff !important; }
+.quote-card-actions button:active:not(:disabled) { background:rgba(138,180,232,.24); }
+.quote-card-actions button:disabled { opacity:.45; cursor:default; }
