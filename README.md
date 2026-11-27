@@ -112,13 +112,14 @@ GitHub・Firebaseとも、このアカウントを所有者・保管用として
 | `settings.js` | 投稿フォームのDOM要素、コメント形式/大きさ/色の切り替えUI、ログ表示ON/OFF、localStorageへの設定保存・復元。 |
 | `timeline.js` | 投稿カードの生成・更新・削除、引用カード生成、もっと見る/折りたたみ、投稿履歴のtxt書き出し機能。 |
 | `comments.js` | 流れる/中央固定コメントの表示、投稿再現（リプレイ）機能、読み上げ（Web Speech API）。 |
-| `firebase.js` | **Firebase関連は全部ここに集約**。初期化、匿名認証、投稿の取得・送信、👍の更新、同時接続管理、タブ切り替え（新着/話題）、バージョンチェック。 |
+| `firebase.js` | Firebaseの初期化、匿名認証、投稿の取得・送信、👍の更新、同時接続管理、タブ切り替え（新着/話題）、バージョンチェック。 |
+| `polls.js` | nicoArea背景の投票UI。投票作成モーダル、投票データ・票のRealtime Database同期、残り時間表示、投票終了操作。`firebase.js` が用意する `db` と `authReady` に依存するため、その後に読み込む。 |
 
 **読み込み順序（`index.html`の`<script>`タグの並び）**:
 ```
-utils.js → layout.js → ranking.js → settings.js → timeline.js → comments.js → firebase.js
+utils.js → layout.js → ranking.js → settings.js → timeline.js → comments.js → firebase.js → polls.js
 ```
-`firebase.js`が一番最後なのには理由があります。他の全ファイルの関数・変数を呼ぶ処理が最後にまとまっているため、先に全部読み込んでおく必要があるからです。**新しいJSファイルを増やす時は、どのファイルの何に依存するかを考えてから読み込み順を決めてください**（詰まりやすいポイントの章に実例があります）。
+`firebase.js` は Firebase の初期化と `authReady` を用意し、`polls.js` はそれらを使うため、`polls.js` を後ろに置きます。**新しいJSファイルを増やす時は、依存先より後に読み込むようにしてください。**
 
 ## 公開URLとリポジトリ
 
@@ -157,6 +158,8 @@ Realtime Databaseの中身は、だいたいこんな構造になっています
     totalTweetCount     … 累計投稿数（tweetNumberの元）
     current_version_key … 現在の最新バージョン番号（バージョンチェック機能用）
 /presence/{uid}/{connectionId} … 匿名UIDごとの接続レコード（切断時は自動削除）
+/polls/{pollId}         … 投票のタイトル・選択肢・設定・開始/終了時刻
+/pollVotes/{pollId}/{uid} … 匿名UIDごとの投票内容
 /usageStats/           … 旧利用状況監視機能で使用していたノード。現行アプリは参照しない
 ```
 
@@ -356,7 +359,7 @@ Firebaseの無料プラン（Sparkプラン）には読み取り・書き込み�
 
 ## 詰まりやすいポイント・今後の課題
 
-- JSファイルの読み込み順（`utils.js → layout.js → ranking.js → settings.js → timeline.js → comments.js → firebase.js`）を変えると壊れます。
+- JSファイルの読み込み順（`utils.js → layout.js → ranking.js → settings.js → timeline.js → comments.js → firebase.js → polls.js`）を変えると壊れます。特に`polls.js`はFirebase初期化後に読み込む必要があります。
 - Firebaseのルールで`"$other": { ".validate": false }`が設定されているため、投稿データに新しいフィールドを追加する時はルール側にも`.validate`を追加しないと保存できません。
 - バージョンチェック機能（`config/current_version_key`）があるので、コードを大きく更新した際は`firebase.js`内の`THIS_HTML_VERSION_KEY`もあわせて更新してください。
 - 分からないことがあれば、まずこのファイルとGitHubのコミット履歴（`git log`）、各JSファイル内のコメントを確認してください。
@@ -364,64 +367,58 @@ Firebaseの無料プラン（Sparkプラン）には読み取り・書き込み�
 
 ## nicoArea背景投票機能
 
-投票UIは `polls.js` で管理し、Firebase Realtime Databaseの `/polls` と `/pollVotes` に保存します。投票の作成・投票結果はリアルタイム同期されます。
+投票機能は `polls.js` が担当し、Firebase Realtime Database の `/polls` と `/pollVotes` を使用します。`index.html` では `firebase.js` の後に読み込まれます。Firebaseの匿名認証が完了してから投票データの監視を開始します。
 
-### 仕様
-- ユーティリティサイドバーの「投票を作成」から作成（歯車メニュー内）。
-- タイトル、2〜6個の選択肢、投票時間（10/15/30秒、1/2/3/4/5分）を指定。
-- 複数選択、投票前の途中結果表示、投票者ごとの票数表示を設定可能。
-- 投票者は匿名Firebase UID単位で1回投票。複数選択時は選択肢を複数選んで送信。
-- nicoArea背景に最大4件表示。1件は全面、2件は左右2分割、3件は2×2分割の右下を空け、4件は2×2分割。
-- 投票終了後も結果を表示。作成者は手動で早期終了できる。
-- 画面上には作成日時が新しい投票から最大4件を表示。過去投票データはFirebaseに残る。
+### 現在の実装
+
+- ユーティリティサイドバーの「＋ 投票を作成」から作成画面を開きます。
+- タイトル（最大80文字）と選択肢（2〜6個、各最大40文字）を設定できます。
+- 投票期間は10秒、15秒、30秒、1分、2分、3分、4分、5分から選択できます。
+- 「投票前でも途中経過を表示」「投票者数を表示」の設定があります。
+- Firebase匿名認証のUIDごとに投票を保存し、同じUIDからの二重投票を防ぎます。
+- 投票中のものを作成日時順に並べ、nicoAreaの背景に最大4件表示します。3件の場合は2×2配置の右下を空ける想定です。
+- 作成者本人には「投票を終了」ボタンが表示されます。
+- 投票データと票数はRealtime Databaseの変更を監視して更新します。
+
+### 未実装・注意点
+
+- 複数選択のチェック項目とデータ形式の分岐はありますが、現行UIは選択肢を1つずつ押す方式で、1回の投票で複数選択する操作には対応していません。複数選択を有効にしても、現状は1つの選択肢だけが保存されます。
+- 投票終了後の履歴一覧・結果の常時表示・過去投票の削除機能はありません。現在の表示対象は投票受付中の投票です。
+- 「投票者数を表示」は各選択肢の票数を表示する設定であり、投票者の名前やUIDを公開する機能ではありません。
+- 表示件数の上限を超えた投票もFirebaseには残ります。古いデータを消す場合は、Realtime Databaseのデータ構造を確認してから手動で削除してください。
 
 ### Realtime Databaseのデータ構造
+
 ```
 /polls/{pollId}
-  title, choices[], durationSeconds, createdAt, endsAt,
-  creatorUid, allowMultiple, showResults, showVoters
+  title             … 投票タイトル
+  choices           … 選択肢の配列（2〜6件）
+  durationSeconds   … 投票時間（秒）
+  createdAt         … 作成時刻（Unix timeのミリ秒）
+  endsAt            … 終了予定時刻（Unix timeのミリ秒）
+  creatorUid        … 作成者の匿名Firebase UID
+  allowMultiple     … 複数選択設定（現行UIでは複数選択操作は未対応）
+  showResults       … 投票前の途中結果を表示するか
+  showVoters        … 選択肢ごとの票数を表示するか
+
 /pollVotes/{pollId}/{anonymousUid}
-  単一選択: choiceIndex（number）
-  複数選択: [choiceIndex, ...]
+  単一選択           … 選択肢番号（number）
+  複数選択形式       … 選択肢番号の配列（現行UIからは複数件を送信しない）
 ```
 
-### Firebase Security Rulesへの追加
+### Firebase Security Rules
 
-既存ルールの `rules` 直下に、次の2ノードを追加してください。既存ルール全体を置き換えるのではなく、`polls` と `pollVotes` のブロックだけを追加します。既存の `".write": false` はそのままにします。
+投票機能を使うには、Realtime DatabaseのSecurity Rulesで `/polls` と `/pollVotes` の読み書きを許可しつつ、少なくとも次の条件を検証してください。
 
-```json
-"polls": {
-  ".read": true,
-  "$poll_id": {
-    ".write": "auth != null && ((!data.exists() && newData.child('creatorUid').val() === auth.uid) || (data.exists() && data.child('creatorUid').val() === auth.uid))",
-    ".validate": "newData.hasChildren(['title','choices','durationSeconds','createdAt','endsAt','creatorUid','allowMultiple','showResults','showVoters'])",
-    "title": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80" },
-    "choices": {
-      ".validate": "newData.hasChildren() && newData.numChildren() >= 2 && newData.numChildren() <= 6",
-      "$index": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" }
-    },
-    "durationSeconds": { ".validate": "newData.isNumber() && (newData.val() === 10 || newData.val() === 15 || newData.val() === 30 || newData.val() === 60 || newData.val() === 120 || newData.val() === 180 || newData.val() === 240 || newData.val() === 300)" },
-    "createdAt": { ".validate": "newData.isNumber()" },
-    "endsAt": { ".validate": "newData.isNumber()" },
-    "creatorUid": { ".validate": "newData.isString() && newData.val() === auth.uid" },
-    "allowMultiple": { ".validate": "newData.isBoolean()" },
-    "showResults": { ".validate": "newData.isBoolean()" },
-    "showVoters": { ".validate": "newData.isBoolean()" },
-    "$other": { ".validate": false }
-  }
-},
-"pollVotes": {
-  ".read": true,
-  "$poll_id": {
-    "$uid": {
-      ".write": "auth != null && auth.uid === $uid && !data.exists() && root.child('polls').child($poll_id).child('endsAt').val() > now",
-      ".validate": "(newData.isNumber() && newData.val() >= 0 && newData.val() < root.child('polls').child($poll_id).child('choices').numChildren()) || newData.hasChildren()",
-      "$index": {
-        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < root.child('polls').child($poll_id).child('choices').numChildren()"
-      }
-    }
-  }
-}
-```
+- 匿名認証済みユーザーのみが投票を作成・送信できること。
+- 新規投票の `creatorUid` が書き込みユーザーの `auth.uid` と一致すること。
+- 投票タイトル・選択肢の文字数と選択肢数、投票時間、各フィールドの型を制限すること。
+- 投票者は自分のUIDの場所にのみ投票でき、同じ投票への二重投票を防ぐこと。
+- 投票期限を過ぎた投票には新しい票を書き込めないこと。
+- 作成者以外が投票設定や終了時刻を書き換えられないこと。
 
-> 注意: FirebaseコンソールのRealtime Database → ルールで、既存の `rules` オブジェクト内に追加して公開してください。GitHub上のREADMEやJavaScriptを更新しても、Firebase側のSecurity Rulesは自動では変更されません。投票機能の公開前に、必ずFirebaseコンソールで反映してください。
+**重要:** このREADMEに過去掲載されていたルール例には、Realtime Database Rulesで利用できない`numChildren()`を使った条件が含まれていました。その例は使用しないでください。Realtime Database Rulesには、選択肢配列の子要素数を直接数える`numChildren()`メソッドはありません。ルール式を編集するときは、Firebaseコンソールのルールエディタで構文エラーがないことを確認してください。
+
+現在Firebaseに公開されているルールが正本です。GitHub上のREADMEやJavaScriptを変更しても、Firebase側のSecurity Rulesは自動では更新されません。ルールを変更する前には必ずRealtime Database → ルールの現物を確認し、変更後はルールを公開してから、投票の作成・投票・期限切れ後の書き込み拒否を実機で確認してください。
+
+投票作成時に「保存できませんでした」と表示された場合、表示文だけでは原因を特定できません。Firebaseコンソールのルールと、ブラウザの開発者コンソールに出るFirebaseエラーを確認してください。
