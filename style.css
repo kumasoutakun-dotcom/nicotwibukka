@@ -2022,3 +2022,12 @@ textarea:focus-visible {
         transform: none !important;
     }
 }
+
+
+/* 入力欄の高さをコンパクトに調整 */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+select,
+textarea {
+    min-height: 38px;
+    padding: 6px 12px;
+}
