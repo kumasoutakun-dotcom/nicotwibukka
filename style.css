@@ -2297,3 +2297,9 @@ textarea {
 .quote-card .quote-card-toggle {
     font-family: 'k8x12S', sans-serif !important;
 }
+
+
+/* 投稿本文と「もっと見る／折りたたむ」の間隔を詰める */
+.tweet .toggle-text-button {
+    margin-top: 0;
+}
