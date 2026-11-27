@@ -7,7 +7,7 @@
   if (!area) return;
 
   const style = document.createElement('style');
-  style.textContent = \`
+  style.textContent = `
     #pollBackground { position:absolute; inset:0; z-index:1; display:grid; grid-template-columns:1fr; grid-template-rows:1fr; gap:3px; padding:5px; box-sizing:border-box; pointer-events:none; overflow:hidden; }
     #pollBackground.poll-count-2 { grid-template-columns:1fr 1fr; }
     #pollBackground.poll-count-3, #pollBackground.poll-count-4 { grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
@@ -46,7 +46,7 @@
     #pollCreatorBox .poll-check input { width:auto; }
     #pollCreatorStatus { min-height:18px; margin-top:7px; font-size:12px; color:#ffdca0; }
     @media (max-width:520px) { #pollCreatorBox { padding:13px; } }
-  \`;
+  `;
   document.head.appendChild(style);
 
   const layer = document.createElement('div');
@@ -56,7 +56,7 @@
 
   const modal = document.createElement('div');
   modal.id = 'pollCreatorModal';
-  modal.innerHTML = \`
+  modal.innerHTML = `
     <div id="pollCreatorBox" role="dialog" aria-modal="true" aria-labelledby="pollCreatorTitle">
       <h3 id="pollCreatorTitle">投票を作成</h3>
       <label for="pollTitle">質問・投票タイトル</label><input id="pollTitle" type="text" maxlength="80" placeholder="例：次の企画は何がいい？">
@@ -70,7 +70,7 @@
       <label class="poll-check"><input type="checkbox" id="pollShowVoters"> 選択肢ごとの票数を表示</label>
       <div id="pollCreatorStatus" role="status"></div>
       <div class="poll-creator-actions"><button type="button" id="pollCreateSubmit">作成して表示</button><button type="button" id="pollCreateCancel" class="secondary">キャンセル</button></div>
-    </div>\`;
+    </div>`;
   document.body.appendChild(modal);
 
   const sidebar = document.getElementById('utilitySidebarContent');
@@ -225,7 +225,7 @@
     if (Array.isArray(value)) return value.map(Number).filter(Number.isInteger);
     if (typeof value === 'number' && Number.isInteger(value)) return [value];
     if (value && typeof value === 'object') {
-      return Object.keys(value).filter(key => /^\\d+$/.test(key) && value[key] !== null && value[key] !== false).map(Number);
+      return Object.keys(value).filter(key => /^\d+$/.test(key) && value[key] !== null && value[key] !== false).map(Number);
     }
     return [];
   }
