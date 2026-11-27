@@ -360,3 +360,68 @@ Firebaseの無料プラン（Sparkプラン）には読み取り・書き込み�
 - Firebaseのルールで`"$other": { ".validate": false }`が設定されているため、投稿データに新しいフィールドを追加する時はルール側にも`.validate`を追加しないと保存できません。
 - バージョンチェック機能（`config/current_version_key`）があるので、コードを大きく更新した際は`firebase.js`内の`THIS_HTML_VERSION_KEY`もあわせて更新してください。
 - 分からないことがあれば、まずこのファイルとGitHubのコミット履歴（`git log`）、各JSファイル内のコメントを確認してください。
+
+
+## nicoArea背景投票機能
+
+投票UIは `polls.js` で管理し、Firebase Realtime Databaseの `/polls` と `/pollVotes` に保存します。投票の作成・投票結果はリアルタイム同期されます。
+
+### 仕様
+- ユーティリティサイドバーの「投票を作成」から作成（歯車メニュー内）。
+- タイトル、2〜6個の選択肢、投票時間（10/15/30秒、1/2/3/4/5分）を指定。
+- 複数選択、投票前の途中結果表示、投票者ごとの票数表示を設定可能。
+- 投票者は匿名Firebase UID単位で1回投票。複数選択時は選択肢を複数選んで送信。
+- nicoArea背景に最大4件表示。1件は全面、2件は左右2分割、3件は2×2分割の右下を空け、4件は2×2分割。
+- 投票終了後も結果を表示。作成者は手動で早期終了できる。
+- 画面上には作成日時が新しい投票から最大4件を表示。過去投票データはFirebaseに残る。
+
+### Realt ime Databaseのデータ構造
+```
+/polls/{pollId}
+  title, choices[], durationSeconds, createdAt, endsAt,
+  creatorUid, allowMultiple, showResults, showVoters
+/pollVotes/{pollId}/{anonymousUid}
+  単一選択: choiceIndex（number）
+  複数選択: [choiceIndex, ...]
+```
+
+### Firebase Security Rulesへの追加
+
+既存ルールの `rules` 直下に、次の2ノードを追加してください。既存ルール全体を置き換えるのではなく、`polls` と `pollVotes` のブロックだけを追加します。既存の `".write": false` はそのままにします。
+
+```json
+"polls": {
+  ".read": true,
+  "$poll_id": {
+    ".write": "auth != null && ((!data.exists() && newData.child('creatorUid').val() === auth.uid) || (data.exists() && data.child('creatorUid').val() === auth.uid))",
+    ".validate": "newData.hasChildren(['title','choices','durationSeconds','createdAt','endsAt','creatorUid','allowMultiple','showResults','showVoters'])",
+    "title": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80" },
+    "choices": {
+      ".validate": "newData.hasChildren() && newData.numChildren() >= 2 && newData.numChildren() <= 6",
+      "$index": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" }
+    },
+    "durationSeconds": { ".validate": "newData.isNumber() && (newData.val() === 10 || newData.val() === 15 || newData.val() === 30 || newData.val() === 60 || newData.val() === 120 || newData.val() === 180 || newData.val() === 240 || newData.val() === 300)" },
+    "createdAt": { ".validate": "newData.isNumber()" },
+    "endsAt": { ".validate": "newData.isNumber()" },
+    "creatorUid": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+    "allowMultiple": { ".validate": "newData.isBoolean()" },
+    "showResults": { ".validate": "newData.isBoolean()" },
+    "showVoters": { ".validate": "newData.isBoolean()" },
+    "$other": { ".validate": false }
+  }
+},
+"pollVotes": {
+  ".read": true,
+  "$poll_id": {
+    "$uid": {
+      ".write": "auth != null && auth.uid === $uid && !data.exists() && root.child('polls').child($poll_id).child('endsAt').val() > now",
+      ".validate": "newData.isNumber() || newData.hasChildren()",
+      "$index": {
+        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < root.child('polls').child($poll_id).child('choices').numChildren()"
+      }
+    }
+  }
+}
+```
+
+> 注意: FirebaseコンソールのRealtime Database → ルールで、既存の `rules` オブジェクト内に追加して公開してください。GitHub上のREADMEやJavaScriptを更新しても、Firebase側のSecurity Rulesは自動では変更されません。投票機能の公開前に、必ずFirebaseコンソールで反映してください。
