@@ -375,7 +375,7 @@ Firebaseの無料プラン（Sparkプラン）には読み取り・書き込み�
 - 投票終了後も結果を表示。作成者は手動で早期終了できる。
 - 画面上には作成日時が新しい投票から最大4件を表示。過去投票データはFirebaseに残る。
 
-### Realt ime Databaseのデータ構造
+### Realtime Databaseのデータ構造
 ```
 /polls/{pollId}
   title, choices[], durationSeconds, createdAt, endsAt,
@@ -415,7 +415,7 @@ Firebaseの無料プラン（Sparkプラン）には読み取り・書き込み�
   "$poll_id": {
     "$uid": {
       ".write": "auth != null && auth.uid === $uid && !data.exists() && root.child('polls').child($poll_id).child('endsAt').val() > now",
-      ".validate": "newData.isNumber() || newData.hasChildren()",
+      ".validate": "(newData.isNumber() && newData.val() >= 0 && newData.val() < root.child('polls').child($poll_id).child('choices').numChildren()) || newData.hasChildren()",
       "$index": {
         ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < root.child('polls').child($poll_id).child('choices').numChildren()"
       }
