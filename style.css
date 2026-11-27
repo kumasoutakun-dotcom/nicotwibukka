@@ -1770,3 +1770,255 @@ form,
     margin-block: 0;
     line-height: 1.2;
 }
+
+
+/* =============================================================
+   16. Material 3らしい面・状態・コンポーネントの整理
+   既存のベースカラーは維持し、トーンの重なりと操作感で質感を出す
+   ============================================================= */
+
+:root {
+    --m3-state-hover: rgba(255, 255, 255, 0.07);
+    --m3-state-pressed: rgba(255, 255, 255, 0.12);
+    --m3-surface-highlight: rgba(255, 255, 255, 0.035);
+    --m3-motion-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* カードは輪郭だけで区切らず、上面のわずかなハイライトと低い影で面を作る */
+#topUsers,
+#replayPanel,
+#allUsers,
+.tweet {
+    background-image: linear-gradient(
+        180deg,
+        var(--m3-surface-highlight) 0%,
+        rgba(255, 255, 255, 0) 58%
+    );
+    box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.22),
+        0 1px 1px rgba(255, 255, 255, 0.025) inset;
+    transition:
+        box-shadow 220ms var(--m3-motion-standard),
+        transform 220ms var(--m3-motion-standard),
+        background-color 180ms var(--m3-motion-standard);
+}
+
+#topUsers,
+#replayPanel,
+#allUsers {
+    border-radius: 24px;
+}
+
+.tweet {
+    border-radius: 20px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .tweet:hover,
+    #topUsers:hover,
+    #replayPanel:hover,
+    #allUsers:hover {
+        box-shadow:
+            0 4px 12px rgba(0, 0, 0, 0.22),
+            0 1px 2px rgba(0, 0, 0, 0.16),
+            0 1px 1px rgba(255, 255, 255, 0.035) inset;
+    }
+
+    .tweet:hover {
+        transform: translateY(-1px);
+    }
+}
+
+/* 引用はカードの中に入る「一段低い面」として表現 */
+.quote-card,
+#quotePreviewContainer {
+    background-image: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.025),
+        rgba(255, 255, 255, 0) 55%
+    );
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16) inset;
+}
+
+/* 新着／話題は独立したボタンではなく、ひとまとまりのセグメントコントロールに */
+#feedTabs {
+    align-items: stretch;
+    padding: 4px;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.feed-tab {
+    min-height: 48px;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    box-shadow: none;
+    transition:
+        background-color 180ms var(--m3-motion-standard),
+        color 180ms var(--m3-motion-standard),
+        box-shadow 180ms var(--m3-motion-standard),
+        transform 140ms var(--m3-motion-standard);
+}
+
+.feed-tab.active-tab {
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.2),
+        0 1px 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .feed-tab:not(.active-tab):hover {
+        background: var(--m3-state-hover);
+        color: #fff;
+    }
+}
+
+.feed-tab:active {
+    transform: scale(0.985);
+    background-image: linear-gradient(var(--m3-state-pressed), var(--m3-state-pressed));
+}
+
+/* 通常ボタンは少し丸みのある形に統一。全面ピル型一辺倒にしない */
+button:not(.toggle-text-button):not(.log-toggle-link),
+.export-option-btn,
+#exportModalCancel {
+    min-height: 44px;
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition:
+        box-shadow 180ms var(--m3-motion-standard),
+        transform 140ms var(--m3-motion-standard),
+        background-image 140ms var(--m3-motion-standard),
+        filter 140ms var(--m3-motion-standard);
+}
+
+button:not(.toggle-text-button):not(.log-toggle-link):active,
+.export-option-btn:active,
+#exportModalCancel:active {
+    transform: scale(0.975);
+    filter: brightness(0.98);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    button:not(.toggle-text-button):not(.log-toggle-link):hover,
+    .export-option-btn:hover,
+    #exportModalCancel:hover {
+        filter: brightness(1.06);
+    }
+}
+
+/* 投稿アクションは小さなトーナル・ピルとして、カード本体と階層を分ける */
+.tweet-meta-actions {
+    gap: 6px;
+}
+
+.tweet-meta-actions .reaction-btn,
+.tweet-meta-actions .requote-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 38px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.07);
+    box-shadow: none;
+    transition:
+        background-color 160ms var(--m3-motion-standard),
+        transform 140ms var(--m3-motion-standard);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .tweet-meta-actions .reaction-btn:hover,
+    .tweet-meta-actions .requote-btn:hover {
+        background-color: rgba(255, 255, 255, 0.13);
+    }
+}
+
+.tweet-meta-actions .reaction-btn:active,
+.tweet-meta-actions .requote-btn:active {
+    background-color: rgba(255, 255, 255, 0.18);
+    transform: scale(0.94);
+}
+
+.tweet-meta-actions .reaction-btn:disabled {
+    opacity: 0.48;
+    box-shadow: none;
+}
+
+/* 入力欄はアウトライン型のまま、高さ・内側余白・フォーカスを整える */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+select,
+textarea {
+    min-height: 44px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    transition:
+        border-color 180ms var(--m3-motion-standard),
+        box-shadow 180ms var(--m3-motion-standard);
+}
+
+input::placeholder {
+    opacity: 0.68;
+}
+
+.form-field select {
+    border-radius: 12px;
+}
+
+.button-group {
+    gap: 8px;
+}
+
+/* 画面上に浮くトグル類は、背景をぼかしたfloating surfaceに */
+#toggleLogDisplayContainer,
+#toggleSpeechContainer,
+#toggleRainbowContainer,
+#concurrentUsers {
+    border-radius: 18px;
+    box-shadow:
+        0 3px 10px rgba(0, 0, 0, 0.22),
+        0 1px 1px rgba(255, 255, 255, 0.05) inset;
+    backdrop-filter: blur(14px) saturate(1.15);
+    -webkit-backdrop-filter: blur(14px) saturate(1.15);
+}
+
+/* セクション見出しに一貫した字間と余白を与える */
+#topUsers h3,
+#allUsers h3,
+#replayPanel h3 {
+    letter-spacing: 0.025em;
+    line-height: 1.25;
+}
+
+/* リスト項目は角丸のまとまりとして見せ、カード内の情報を整理 */
+#allUsers li {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.045);
+}
+
+/* キーボード操作にも同じ状態レイヤーを用意 */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #topUsers,
+    #replayPanel,
+    #allUsers,
+    .tweet,
+    .feed-tab,
+    .tweet-meta-actions .reaction-btn,
+    .tweet-meta-actions .requote-btn {
+        transition: none !important;
+        transform: none !important;
+    }
+}
