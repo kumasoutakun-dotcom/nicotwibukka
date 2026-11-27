@@ -2280,3 +2280,14 @@ textarea {
 .quote-card-actions button:hover:not(:disabled) { background:rgba(138,180,232,.14); color:#d9eaff !important; }
 .quote-card-actions button:active:not(:disabled) { background:rgba(138,180,232,.24); }
 .quote-card-actions button:disabled { opacity:.45; cursor:default; }
+
+
+/* 引用カード内アクションの縦寸法をさらにコンパクトに */
+.quote-card-actions button {
+    min-height: 18px;
+    height: 18px;
+    min-width: 24px;
+    padding: 0 3px;
+    line-height: 1;
+    font-size: 0.82em;
+}
