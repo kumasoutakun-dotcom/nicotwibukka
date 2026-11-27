@@ -1751,3 +1751,22 @@ form,
         box-shadow: none !important;
     }
 }
+
+
+/* =============================================================
+   15. 投稿カード内の縦方向の余白をさらに圧縮
+   ============================================================= */
+
+/* 投稿者名 → 投稿本文 → アクションの行間を詰める */
+.tweet {
+    row-gap: 0;
+}
+
+.tweet-meta-namegroup {
+    padding-bottom: 0;
+}
+
+.tweet .tweet-text-content {
+    margin-block: 0;
+    line-height: 1.2;
+}
