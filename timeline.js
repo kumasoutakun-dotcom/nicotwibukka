@@ -502,7 +502,26 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       }
       const quotedName = (found.data.name && found.data.name.trim()) ? found.data.name : '名無し';
       const bodyHtml = buildQuoteCardContentHtml(found.data);
-      cardEl.innerHTML = `<div class="quote-card-header"><span class="quote-card-number">#${quoteNumber}</span> <span class="quote-card-name">@${quotedName}</span></div><div class="quote-card-body">${bodyHtml}</div>`;
+      const quoteReacted = found.data.reactedUsers && found.data.reactedUsers[currentUser];
+      const quoteReactionCount = found.data.reactions || 0;
+      const quoteIsAnonymous = !found.data.name || found.data.name.trim() === '';
+      cardEl.innerHTML = `
+          <div class="quote-card-header">
+              <span class="quote-card-author"><span class="quote-card-number">#${quoteNumber}</span> <span class="quote-card-name">@${quotedName}</span></span>
+              <span class="quote-card-actions">
+                  <button type="button" class="quote-card-reaction-btn" style="color:${quoteReacted ? '#87CEEB' : '#aab7c4'};" ${quoteIsAnonymous ? 'disabled' : ''} title="引用元にいいね">👍 ${quoteReactionCount}</button>
+                  <button type="button" class="quote-card-requote-btn" title="引用元をリポスト">🔄</button>
+              </span>
+          </div>
+          <div class="quote-card-body">${bodyHtml}</div>`;
+      const quoteReactionBtn = cardEl.querySelector('.quote-card-reaction-btn');
+      if (quoteReactionBtn) {
+          quoteReactionBtn.onclick = (e) => { e.stopPropagation(); toggleReaction(found.key, found.data); };
+      }
+      const quoteRequoteBtn = cardEl.querySelector('.quote-card-requote-btn');
+      if (quoteRequoteBtn) {
+          quoteRequoteBtn.onclick = (e) => { e.stopPropagation(); insertQuoteIntoForm(quoteNumber); };
+      }
       cardEl.classList.add('quote-card-clickable');
       cardEl.addEventListener('click', () => jumpToTweetByNumber(quoteNumber));
 
