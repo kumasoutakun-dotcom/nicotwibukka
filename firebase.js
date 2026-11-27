@@ -27,7 +27,7 @@
   // --- バージョンチェック関連の追加 ---
   const VERSION_CONFIG_REF = db.ref('config/current_version_key'); // Firebase上のバージョンキーのパス
 
-  const THIS_HTML_VERSION_KEY = "v1.7.7"; // <-- ここ
+  const THIS_HTML_VERSION_KEY = "v1.7.8"; // <-- ここ
   let isCurrentVersion = false; // 現在のHTMLが最新バージョンかどうかを示すフラグ
   // --- ここまで ---
   let tweetsQueryRef = null;
