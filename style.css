@@ -2291,3 +2291,9 @@ textarea {
     line-height: 1;
     font-size: 0.82em;
 }
+
+
+/* 引用投稿内の「もっと見る／折りたたむ」を k8x12S に統一 */
+.quote-card .quote-card-toggle {
+    font-family: 'k8x12S', sans-serif !important;
+}
