@@ -16,10 +16,13 @@
     .nico-poll-meta { font-size:clamp(9px,1.4vw,12px); opacity:.82; line-height:1.25; }
     .nico-poll-creator { font-size:clamp(9px,1.35vw,11px); opacity:.9; overflow-wrap:anywhere; }
     .nico-poll-options { display:grid; grid-template-columns:1fr; gap:4px; overflow:auto; }
-    .nico-poll-option { display:block; width:100%; min-height:27px; border:1px solid rgba(255,255,255,.35); border-radius:9px; padding:4px 8px; color:white; background:rgba(255,255,255,.10); text-align:left; font:inherit; font-size:clamp(10px,1.7vw,15px); line-height:1.2; cursor:pointer; position:relative; overflow:hidden; isolation:isolate; }
+    .nico-poll-option { display:block; width:100%; min-height:32px; border:1px solid rgba(255,255,255,.35); border-radius:9px; padding:4px 8px 10px; color:white; background:rgba(255,255,255,.10); text-align:left; font:inherit; font-size:clamp(10px,1.7vw,15px); line-height:1.2; cursor:pointer; position:relative; overflow:hidden; isolation:isolate; }
     .nico-poll-option:disabled { opacity:.92; cursor:default; }
     .nico-poll-option.selected { border-color:#c5ddff; background:rgba(110,165,230,.22); }
-    .poll-wavy-progress { position:absolute; inset:0; z-index:0; width:100%; height:100%; pointer-events:none; }
+    .poll-wavy-progress { position:absolute; left:9px; right:9px; bottom:2px; z-index:0; width:calc(100% - 18px); height:8px; pointer-events:none; overflow:visible; }
+    .poll-wave-motion { transform-box:fill-box; transform-origin:left center; animation:poll-wave-shift 1.6s linear infinite; }
+    @keyframes poll-wave-shift { from { transform:translateX(0); } to { transform:translateX(-10%); } }
+    @media (prefers-reduced-motion:reduce) { .poll-wave-motion { animation:none; } }
     .nico-poll-option .poll-option-label { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; gap:5px; min-height:16px; }
     .nico-poll-option .poll-option-name { overflow-wrap:anywhere; }
     .nico-poll-option .poll-option-result { white-space:nowrap; flex-shrink:0; font-family:'Akshar',sans-serif; font-size:1.02em; }
@@ -184,7 +187,7 @@
     const svgNS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNS, 'svg');
     svg.setAttribute('class', 'poll-wavy-progress');
-    svg.setAttribute('viewBox', '0 0 100 20');
+    svg.setAttribute('viewBox', '0 0 120 16');
     svg.setAttribute('preserveAspectRatio', 'none');
     svg.setAttribute('aria-hidden', 'true');
 
@@ -195,29 +198,37 @@
     const rect = document.createElementNS(svgNS, 'rect');
     rect.setAttribute('x', '0');
     rect.setAttribute('y', '0');
-    rect.setAttribute('width', String(Math.max(0, Math.min(100, percent))));
-    rect.setAttribute('height', '20');
+    rect.setAttribute('width', String(Math.max(0, Math.min(100, percent)) * 1.2));
+    rect.setAttribute('height', '16');
     clip.appendChild(rect);
     defs.appendChild(clip);
     svg.appendChild(defs);
 
-    const wavePath = 'M0 10 C8 1 16 19 24 10 S40 1 48 10 S64 19 72 10 S88 1 100 10';
-    const background = document.createElementNS(svgNS, 'path');
-    background.setAttribute('d', wavePath);
-    background.setAttribute('fill', 'none');
-    background.setAttribute('stroke', 'rgba(220,235,255,.22)');
-    background.setAttribute('stroke-width', '13');
-    background.setAttribute('stroke-linecap', 'round');
-    svg.appendChild(background);
+    // Material 3 Expressive の LinearWavyProgressIndicator に合わせ、
+    // 得票率を長さで表しながら、波形だけを一定速度で流す。
+    const wavePath = 'M0 8 C4 2 8 2 12 8 S20 14 24 8 S32 2 36 8 S44 14 48 8 S56 2 60 8 S68 14 72 8 S80 2 84 8 S92 14 96 8 S104 2 108 8 S116 14 120 8 S128 2 132 8 S140 14 144 8 S152 2 156 8 S164 14 168 8 S176 2 180 8 S188 14 192 8 S200 2 204 8 S212 14 216 8 S224 2 228 8 S236 14 240 8';
 
-    const foreground = document.createElementNS(svgNS, 'path');
-    foreground.setAttribute('d', wavePath);
-    foreground.setAttribute('fill', 'none');
-    foreground.setAttribute('stroke', 'rgba(155,202,255,.74)');
-    foreground.setAttribute('stroke-width', '13');
-    foreground.setAttribute('stroke-linecap', 'round');
-    foreground.setAttribute('clip-path', 'url(#' + clipName + ')');
-    svg.appendChild(foreground);
+    const motion = document.createElementNS(svgNS, 'g');
+    motion.setAttribute('class', 'poll-wave-motion');
+
+    const track = document.createElementNS(svgNS, 'path');
+    track.setAttribute('d', wavePath);
+    track.setAttribute('fill', 'none');
+    track.setAttribute('stroke', 'rgba(220,235,255,.34)');
+    track.setAttribute('stroke-width', '4.5');
+    track.setAttribute('stroke-linecap', 'round');
+    motion.appendChild(track);
+
+    const indicator = document.createElementNS(svgNS, 'path');
+    indicator.setAttribute('d', wavePath);
+    indicator.setAttribute('fill', 'none');
+    indicator.setAttribute('stroke', '#B8D5FF');
+    indicator.setAttribute('stroke-width', '4.5');
+    indicator.setAttribute('stroke-linecap', 'round');
+    indicator.setAttribute('clip-path', 'url(#' + clipName + ')');
+    motion.appendChild(indicator);
+
+    svg.appendChild(motion);
     return svg;
   }
 
@@ -228,6 +239,29 @@
       return Object.keys(value).filter(key => /^\d+$/.test(key) && value[key] !== null && value[key] !== false).map(Number);
     }
     return [];
+  }
+
+  function tick() {
+    const expected = activeEntries()
+      .sort((a, b) => Number(a[1].createdAt) - Number(b[1].createdAt))
+      .slice(-4);
+    const cards = [...layer.querySelectorAll('.nico-poll')];
+    const visibleIds = cards.map(card => card.dataset.pollId);
+    const expectedIds = expected.map(([id]) => id);
+
+    // カウントダウンだけを差分更新し、波形アニメーションを毎秒作り直さない。
+    if (visibleIds.join('|') !== expectedIds.join('|')) {
+      render();
+      return;
+    }
+
+    cards.forEach(card => {
+      const poll = polls[card.dataset.pollId];
+      const meta = card.querySelector('.nico-poll-meta');
+      if (!poll || !meta) return;
+      const left = remaining(poll);
+      meta.textContent = left > 0 ? '投票受付中 · 残り' + left + '秒' : '投票終了';
+    });
   }
 
   function render() {
@@ -248,6 +282,7 @@
       const [id, poll] = entry;
       const card = document.createElement('section');
       card.className = 'nico-poll';
+      card.dataset.pollId = id;
 
       const title = document.createElement('div');
       title.className = 'nico-poll-title';
@@ -385,7 +420,7 @@
       Object.keys(polls).forEach(attachVoteListener);
       render();
     }, error => console.error('投票データ取得失敗', error));
-    timer = setInterval(render, 1000);
+    timer = setInterval(tick, 1000);
   }
 
   modal.querySelector('#pollCreateSubmit').addEventListener('click', async () => {
