@@ -433,6 +433,12 @@ if (predefinedColorSelect.value === 'rainbow') {
     allTweets = {}; 
 
     try {
+        const pollsSnapshot = await db.ref('polls').once('value');
+        const pollRecords = pollsSnapshot.val() || {};
+        window.pollTweetNumbers = new Set(
+            Object.values(pollRecords).map(poll => Number(poll && poll.tweetNumber))
+              .filter(number => Number.isFinite(number) && number > 0)
+        );
         const snapshot = await db.ref('tweets').orderByKey().limitToLast(100).once('value');
         
 
@@ -541,6 +547,12 @@ if (predefinedColorSelect.value === 'rainbow') {
   async function loadTrendingTweets() {
       showLoading('読み込み中…');
       try {
+          const pollsSnapshot = await db.ref('polls').once('value');
+          const pollRecords = pollsSnapshot.val() || {};
+          window.pollTweetNumbers = new Set(
+              Object.values(pollRecords).map(poll => Number(poll && poll.tweetNumber))
+                .filter(number => Number.isFinite(number) && number > 0)
+          );
           const snapshot = await db.ref('likedTweets').orderByKey().limitToLast(100).once('value');
           const rawData = snapshot.val() || {};
           const data = Object.fromEntries(
