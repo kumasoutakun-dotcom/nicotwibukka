@@ -313,8 +313,13 @@ function isPollStreamData(data) {
     if (!data || typeof data !== 'object') return false;
     const hasChoices = Array.isArray(data.choices) ||
         (!!data.choices && typeof data.choices === 'object');
-    return data.type === 'poll' || (hasChoices &&
-        (data.endsAt != null || data.durationSeconds != null || data.creatorUid != null));
+    const hasPollMetadata = data.endsAt != null ||
+        data.durationSeconds != null || data.creatorUid != null ||
+        data.createdAt != null;
+    // 旧投票データには creatorUid が無い場合もあるため、複数の投票固有項目で判定する。
+    return data.type === 'poll' || data.poll === true || data.pollId != null ||
+        (hasChoices && hasPollMetadata &&
+         (data.title != null || data.creatorName != null || data.endsAt != null));
   }
 
   function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
