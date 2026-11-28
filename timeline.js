@@ -500,17 +500,23 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
           cardEl.innerHTML = `<div class="quote-card-missing">#${quoteNumber} の投稿が見つかりません</div>`;
           return;
       }
-      const quotedName = (found.data.name && found.data.name.trim()) ? found.data.name : '名無し';
-      const bodyHtml = buildQuoteCardContentHtml(found.data);
-      const quoteReacted = found.data.reactedUsers && found.data.reactedUsers[currentUser];
-      const quoteReactionCount = found.data.reactions || 0;
-      const quoteIsAnonymous = !found.data.name || found.data.name.trim() === '';
+      const isPollQuote = found.type === 'poll' || !!found.data.choices;
+      const quotedName = isPollQuote
+          ? ((found.data.creatorName && found.data.creatorName.trim()) ? found.data.creatorName : '名無し')
+          : ((found.data.name && found.data.name.trim()) ? found.data.name : '名無し');
+      const bodyHtml = isPollQuote
+          ? '<div class="quote-poll-title">' + DOMPurify.sanitize(found.data.title || '（タイトルなし）') + '</div>' +
+            '<div class="quote-poll-choices">' + (Array.isArray(found.data.choices) ? found.data.choices : Object.values(found.data.choices || {})).map((choice, index) => '<div class="quote-poll-choice">' + (index + 1) + '. ' + DOMPurify.sanitize(String(choice)) + '</div>').join('') + '</div>'
+          : buildQuoteCardContentHtml(found.data);
+      const quoteReacted = !isPollQuote && found.data.reactedUsers && found.data.reactedUsers[currentUser];
+      const quoteReactionCount = isPollQuote ? 0 : (found.data.reactions || 0);
+      const quoteIsAnonymous = isPollQuote || !found.data.name || found.data.name.trim() === '';
       cardEl.innerHTML = `
           <div class="quote-card-header">
               <span class="quote-card-author"><span class="quote-card-number">#${quoteNumber}</span> <span class="quote-card-name">@${quotedName}</span></span>
               <span class="quote-card-actions">
-                  <button type="button" class="quote-card-reaction-btn" style="color:${quoteReacted ? '#87CEEB' : '#aab7c4'};" ${quoteIsAnonymous ? 'disabled' : ''} title="引用元にいいね">👍 ${quoteReactionCount}</button>
-                  <button type="button" class="quote-card-requote-btn" title="引用元をリポスト">🔄</button>
+                  ${isPollQuote ? '' : '<button type="button" class="quote-card-reaction-btn" style="color:' + (quoteReacted ? '#87CEEB' : '#aab7c4') + ';" ' + (quoteIsAnonymous ? 'disabled' : '') + ' title="引用元にいいね">👍 ' + quoteReactionCount + '</button>'}
+                  <button type="button" class="quote-card-requote-btn" title="引用元を再引用">🔄</button>
               </span>
           </div>
           <div class="quote-card-body">${bodyHtml}</div>`;
@@ -554,7 +560,19 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       }
       const targetDiv = targetKey ? (tweetDomCache.get(targetKey) || document.querySelector(`.tweet[data-key="${targetKey}"]`)) : null;
       if (!targetDiv) {
-          alert(`元投稿（#${quoteNumber}）は直近100件の表示範囲外のため移動できません。`);
+          const pollCard = document.querySelector(`.nico-poll-number`)?.parentElement;
+          const pollTabCard = [...document.querySelectorAll('.poll-tab-card')].find(card =>
+              card.querySelector('.poll-tab-number')?.textContent === '#' + quoteNumber);
+          const pollTarget = pollTabCard || (pollCard && pollCard.querySelector('.nico-poll-number')?.textContent === '#' + quoteNumber ? pollCard : null);
+          if (pollTarget) {
+              const pollTab = document.querySelector('[onclick="switchFeedTab(\\'polls\\')"]');
+              if (pollTabCard && typeof switchFeedTab === 'function') switchFeedTab('polls');
+              pollTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              pollTarget.classList.add('quote-jump-highlight');
+              setTimeout(() => pollTarget.classList.remove('quote-jump-highlight'), 1500);
+              return;
+          }
+          alert(`元投稿（#${quoteNumber}）は表示範囲外のため移動できません。`);
           return;
       }
       targetDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -619,8 +637,14 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
           return;
       }
 
-      const quotedName = (found.data.name && found.data.name.trim()) ? found.data.name : '名無し';
-      const bodyHtml = buildQuoteCardContentHtml(found.data);
+      const isPollQuote = found.type === 'poll' || !!found.data.choices;
+      const quotedName = isPollQuote
+          ? ((found.data.creatorName && found.data.creatorName.trim()) ? found.data.creatorName : '名無し')
+          : ((found.data.name && found.data.name.trim()) ? found.data.name : '名無し');
+      const bodyHtml = isPollQuote
+          ? '<div class="quote-poll-title">' + DOMPurify.sanitize(found.data.title || '（タイトルなし）') + '</div>' +
+            '<div class="quote-poll-choices">' + (Array.isArray(found.data.choices) ? found.data.choices : Object.values(found.data.choices || {})).map((choice, index) => '<div class="quote-poll-choice">' + (index + 1) + '. ' + DOMPurify.sanitize(String(choice)) + '</div>').join('') + '</div>'
+          : buildQuoteCardContentHtml(found.data);
       previewEl.innerHTML = `<div class="quote-preview-header">#${quoteNumber} <span class="quote-preview-name">@${quotedName}</span></div><div class="quote-preview-body">${bodyHtml}</div>`;
       previewEl.style.display = 'block';
   }
