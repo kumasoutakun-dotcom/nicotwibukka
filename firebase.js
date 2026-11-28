@@ -501,10 +501,12 @@ if (predefinedColorSelect.value === 'rainbow') {
       const tabTrendBtn = document.getElementById('tabTrendBtn');
       const tabPollBtn = document.getElementById('tabPollBtn');
       const pollTabContent = document.getElementById('pollTabContent');
+      const twiArea = document.getElementById('twiArea');
       if (tabNewBtn) tabNewBtn.classList.toggle('active-tab', tab === 'new');
       if (tabTrendBtn) tabTrendBtn.classList.toggle('active-tab', tab === 'trend');
       if (tabPollBtn) tabPollBtn.classList.toggle('active-tab', tab === 'polls');
       if (pollTabContent) pollTabContent.hidden = tab !== 'polls';
+      if (twiArea) twiArea.classList.toggle('polls-tab-active', tab === 'polls');
       if (tweetStream) tweetStream.style.display = tab === 'polls' ? 'none' : '';
 
       stopLiveTweetListener();
