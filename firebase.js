@@ -549,8 +549,11 @@ if (predefinedColorSelect.value === 'rainbow') {
   }
 
   function stopLiveTweetListener() {
-      db.ref('tweets').off();
+      // ルート参照全体をoffすると他用途の監視まで解除するため、
+      // フィード専用のクエリ監視だけを解除する。
       if (tweetsQueryRef) { tweetsQueryRef.off(); tweetsQueryRef = null; }
+      db.ref('tweets').off('child_changed');
+      db.ref('tweets').off('child_removed');
   }
 
   function stopTrendingLiveListener() {
@@ -690,9 +693,10 @@ if (predefinedColorSelect.value === 'rainbow') {
   function setupRealtimeListeners() {
     console.log("setupRealtimeListeners が実行されました。");
 
-    // すべてのリスナーを一度オフにする
-    db.ref('tweets').off(); // child_changed, child_removed をオフ
-    if (tweetsQueryRef) { tweetsQueryRef.off(); tweetsQueryRef = null; } // child_addedクエリをオフ
+    // フィード用リスナーだけを解除し、nicoArea専用クエリは維持する。
+    db.ref('tweets').off('child_changed');
+    db.ref('tweets').off('child_removed');
+    if (tweetsQueryRef) { tweetsQueryRef.off(); tweetsQueryRef = null; }
     db.ref('presence').off('value');
 
     if (!isCurrentVersion) {
