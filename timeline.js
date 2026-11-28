@@ -560,12 +560,12 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       }
       const targetDiv = targetKey ? (tweetDomCache.get(targetKey) || document.querySelector(`.tweet[data-key="${targetKey}"]`)) : null;
       if (!targetDiv) {
-          const pollCard = document.querySelector(`.nico-poll-number`)?.parentElement;
+          const pollCard = [...document.querySelectorAll('.nico-poll')].find(card =>
+              card.querySelector('.nico-poll-number')?.textContent === '#' + quoteNumber);
           const pollTabCard = [...document.querySelectorAll('.poll-tab-card')].find(card =>
               card.querySelector('.poll-tab-number')?.textContent === '#' + quoteNumber);
-          const pollTarget = pollTabCard || (pollCard && pollCard.querySelector('.nico-poll-number')?.textContent === '#' + quoteNumber ? pollCard : null);
+          const pollTarget = pollTabCard || pollCard;
           if (pollTarget) {
-              const pollTab = document.querySelector('[onclick="switchFeedTab(\\'polls\\')"]');
               if (pollTabCard && typeof switchFeedTab === 'function') switchFeedTab('polls');
               pollTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
               pollTarget.classList.add('quote-jump-highlight');
