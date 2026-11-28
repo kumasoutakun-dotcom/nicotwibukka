@@ -1,438 +1,409 @@
-# nicotwi物化 引き継ぎ資料
+# nicotwi物化
 
-物理化学部コンピュータ班で開発している、ニコニコ動画風の流れるコメント表示と、Twitter風の投稿タイムラインを組み合わせたWebアプリです。通常投稿に加えて、引用・いいね・投票・投稿再現などの機能を備えています。
-この資料は、nicotwiの管理・変更・引き継ぎを行えるようにするための資料です。
-引き継ぐ場合は、まず[代替わりチェックリスト](#代替わりチェックリスト自分で管理を始める時にやること)を上から順番に進めてください。
-ただし、nicotwiを運用する必要がない、または運用したくない場合でも、**公開ページのURLとリポジトリのURLは次の代へ引き継ぐようにしてください。** じゃないと悲しみます。
+ニコニコ動画風の流れるコメント表示と、SNS風の投稿タイムラインを組み合わせたWebアプリです。投稿・引用・いいね・ランキング・投稿再現に加え、リアルタイム投票にも対応しています。
 
 ## 目次
 
-1. [プロジェクト概要](#プロジェクト概要)
-2. [代替わりチェックリスト（自分で管理を始める時にやること）](#代替わりチェックリスト自分で管理を始める時にやること)
-3. [アカウント一覧](#アカウント一覧)
-4. [権限の引き継ぎ方法（詳細）](#権限の引き継ぎ方法詳細)
-5. [ファイル構成](#ファイル構成)
-6. [公開URLとリポジトリ](#公開urlとリポジトリ)
-7. [Firebaseの使い方（＝管理画面）](#firebaseの使い方管理画面)
-8. [投稿を削除する方法](#投稿を削除する方法)
-9. [データのバックアップと復旧方法](#データのバックアップと復旧方法)
-10. [GitHubでの更新方法](#githubでの更新方法)
-11. [現在の開発リポジトリとブランチ](#現在の開発リポジトリとブランチ)
-12. [詰まりやすいポイント・今後の課題](#詰まりやすいポイント今後の課題)
-13. [投票機能](#投票機能)
+- [概要](#概要)
+- [主な機能](#主な機能)
+- [利用技術](#利用技術)
+- [リポジトリ構成](#リポジトリ構成)
+- [動作の仕組み](#動作の仕組み)
+- [Firebaseの設定](#firebaseの設定)
+- [Realtime Databaseのデータ構造](#realtime-databaseのデータ構造)
+- [Security Rules](#security-rules)
+- [開発・更新方法](#開発更新方法)
+- [運用・保守](#運用保守)
+- [既知の制約](#既知の制約)
 
----
+## 概要
 
-## プロジェクト概要
+- **アプリ名:** nicotwi物化
+- **現在のアプリバージョン:** ver1.7.8（`index.html` / `firebase.js`）
+- **開発リポジトリ:** [kumasoutakun-dotcom/nicotwibukka](https://github.com/kumasoutakun-dotcom/nicotwibukka)
+- **作業ブランチ:** `codex-connector-test`
+- **公開サイト:** GitHub Pages。公開元ブランチ・URLはリポジトリの Settings → Pages で確認してください。
 
-- **何のアプリ？**: 投稿すると画面上をコメントが流れる（ニコニコ動画模倣）。投稿一覧は「新着」「話題」のタイムラインで確認でき、投票専用タブもあります。
-- **主な機能**: 流れるコメント／中央固定コメント、名前・文字サイズ・文字色の設定、虹色・五千兆・ドット表示、投稿へのいいね、`#投稿番号`による引用、投稿ログ、投稿再現、読み上げ、リアルタイム同時接続数表示、投票の作成・投票・結果表示。
-- **技術構成**: HTML / CSS / JavaScript（フレームワークなし・素のJS）＋ Firebase Realtime Database（データの保存・同期）。ビルドツールは無く、ファイルをそのままGitHub Pagesで公開しているだけです。
-- **対象環境**: 主にChromebook・スマホのブラウザで動作確認しています。
-- **作り方**: 全てClaude（AI）とのバイブコーディングです。
+このリポジトリのブランチと、従来の公開用リポジトリ・Firebaseプロジェクトの管理者は同一とは限りません。公開先や所有者を変更する場合は、GitHub PagesとFirebaseコンソールの実設定を確認してから作業してください。
 
-## 代替わりチェックリスト（自分で管理を始める時にやること）
+## 主な機能
 
-前の代から直接教わっていなくても、このREADMEと下のチェックリストだけで管理・変更ができるようになっています。上から順番に進めてください。
+### コメント表示
+- 通常の流れるコメントと、画面中央に固定するコメント
+- コメントの文字サイズ・色の変更
+- 虹色、五千兆表示、ドットフォント表示
+- 表示設定（投稿ログ、読み上げ、虹色アニメーション）
+- コメントのリアルタイム同期
 
-- [ ] [アカウント一覧](#アカウント一覧)を読み、部活の共用アカウント`omochinomocchili@gmail.com`の存在を確認する
-- [ ] 部室の物化部ノート、または「物化部現役」グループLINEのノートから、そのアカウントのパスワードを確認する
-- [ ] 実際にこのアカウントで、GitHub・Firebase両方にログインできることを確認する
-- [ ] [データのバックアップと復旧方法](#データのバックアップと復旧方法)の「方法2」で、最新のJSONバックアップを一度取っておく
-- [ ] [権限の引き継ぎ方法](#権限の引き継ぎ方法詳細)に沿って、自分個人のGitHubアカウントをAdmin、自分個人のGoogleアカウントをFirebaseの編集者以上として追加する
-- [ ] 追加した個人アカウントから、GitHubリポジトリとFirebaseプロジェクトの両方に実際にアクセスできることを確認する
-- [ ] 共用アカウントからいったんログアウトし、個人アカウントだけでGitHub・Firebaseの管理画面を開けることを確認する
-- [ ] 公開ページ（`https://omochinomocchili.github.io/nicotwi-bukka/`）から実際に投稿し、画面に反映されることを確認する
-- [ ] [復旧方法](#データのバックアップと復旧方法)に一通り目を通しておく
+### 投稿タイムライン
+- 「新着」「話題」「投票」のタブ
+- 投稿へのいいねと、いいね数に基づく話題表示
+- 本文中の `#投稿番号` による引用
+- 投稿者ランキング（直近100件）
+- 投稿履歴のTXT / JSON書き出し
+- Firebase上の投稿データを使った再現、およびTXTファイルからの再生
 
-### 引き継ぎ完了の条件
+### 投票
+- 2〜6個の選択肢を持つ投票の作成
+- 単一選択・複数選択
+- 投票時間中の再投票（自分の票の変更）
+- 途中経過・選択肢ごとの票数の表示設定
+- 進行中の投票と過去の結果を表示する投票タブ
+- nicoArea上での投票表示と、終了時の結果発表表示
+- 通常投稿から投票を引用
 
-今後もnicotwiを運用・変更する場合は、次の4条件をすべて満たしたら、引き継ぎ完了です。
+## 利用技術
 
-1. 自分個人のGitHubアカウントで、リポジトリを管理・更新できる
-2. 自分個人のGoogleアカウントで、Firebaseプロジェクトを管理できる
-3. 公開ページへの投稿と、GitHubの更新が実際に反映されることを確認している
-4. 最新のFirebase JSONバックアップを保管しており、復旧方法を確認している
+| 分類 | 技術 |
+|---|---|
+| フロントエンド | HTML / CSS / JavaScript（フレームワークなし） |
+| データベース | Firebase Realtime Database |
+| 認証 | Firebase Authentication（匿名認証） |
+| 表示ライブラリ | DOMPurify |
+| フォント | k8x12S、GenZenGothicKaiC、Akshar |
+| 公開 | GitHub Pages |
 
-共用アカウントにログインできることだけでは、運用を継続する場合の引き継ぎ完了とは言えません。以降の章は、実際に作業する時に読む詳しい参考資料です。
+ビルドツールやパッケージマネージャーは使用していません。HTML・CSS・JavaScriptをブラウザで直接読み込む構成です。
 
-## アカウント一覧
+## リポジトリ構成
 
-このアプリの保管・引き継ぎ用として、部活全体で共用している次のアカウントを使用します。ただし、**実際の管理・変更作業は、代替わりの際に追加した各自の個人アカウントから行ってください。共用アカウントは保管・引き継ぎ用として残し、普段の運用には使用しません。**
-
-代替わりしたら、後述の[権限の引き継ぎ方法](#権限の引き継ぎ方法詳細)に沿って、管理に関わる部員それぞれの個人アカウントをGitHub・Firebaseに追加します。**個人アカウントを追加して実際に管理できることが、引き継ぎの完了条件です。**
-
-### 共用アカウント（保管・引き継ぎ用）
-
-GitHub・Firebaseとも、このアカウントを所有者・保管用として維持します。
-
-**普段の管理・変更はこの共用アカウントでは行わず、各自の個人アカウントから行ってください。** 共用アカウントのパスワードは、代替わりや個人アカウントの追加が必要になった場合に使用します。
-
-- **アカウント**: `omochinomocchili@gmail.com`
-- **GitHub**: このアカウントでログイン（ユーザー名表示は`omochinomocchili`）。リポジトリ `nicotwi-bukka` のオーナー
-- **Firebase**: このアカウントでログイン。プロジェクト `nicotwibukka` のオーナー
-- **パスワードの保管場所**: 部室の物化部ノート、または「物化部現役」グループLINEのノート。分からない時は、まずこの2箇所を確認してください。
-
-## 権限の引き継ぎ方法（詳細）
-
-### GitHubリポジトリに共同編集者を追加する
-
-1. `omochinomocchili@gmail.com`でGitHubにログインした状態で、リポジトリ（`https://github.com/omochinomocchili/nicotwi-bukka`）を開く
-2. 上部タブの「Settings」→ 左メニューの「Collaborators」を開く
-3. 「Add people」から、自分個人のGitHubアカウントのユーザー名を入力し、権限は「Admin」にして招待する（「Write」だとGitHub Pagesの設定など一部の管理画面を操作できません）
-4. 自分個人のアカウントに届いた招待通知（メールまたはGitHub右上の通知ベル）から「Accept invitation」を押す
-
-### Firebaseコンソールに編集者を追加する
-
-1. [https://console.firebase.google.com/](https://console.firebase.google.com/) を開き、`omochinomocchili@gmail.com`でログインしてプロジェクト `nicotwibukka` を選択
-2. 左上の歯車アイコン →「プロジェクトの設定」→ 上部タブの「ユーザーと権限」
-3. 「メンバーを追加」から、自分個人のGoogleアカウントのメールアドレスを入力し、役割は「編集者」以上を選んで追加する
-
-### 共用アカウントのパスワードについて
-
-パスワードそのものはREADMEやGitHubリポジトリには記載しないでください。このREADMEには、保管場所だけを記載します。
-
-### 個人アカウントを必ず追加する理由
-
-共用アカウントのパスワードだけに頼ると、ノートが見つからない・共用アカウントに何かあった、という時にログインできなくなります。
-
-そのため、代替わりしたら自分個人のGitHubアカウントをAdmin、自分個人のGoogleアカウントをFirebaseの編集者以上として必ず追加してください。**追加した個人アカウントを、以後の管理・変更作業に使用します。共用アカウントは保管・引き継ぎ用として残します。** 追加後は、共用アカウントからログアウトした状態でも個人アカウントだけでGitHub・Firebaseを運用、管理できることを確認してください。
-
-この確認まで終わって初めて、共用アカウントのパスワードに依存しない管理体制ができたことになります。
-
-## ファイル構成
-
-すべて `/` 直下に置いてあり、`index.html` が読み込む順番が決まっている（順番を変えると壊れるので注意）。
+主要ファイルはリポジトリ直下にあります。
 
 | ファイル | 役割 |
 |---|---|
-| `index.html` | HTML本体。投稿フォーム、nicoArea、フィードタブ、投票タブ、再現パネルなどの配置。 |
-| `style.css` | 見た目全部（レイアウト・色・アニメーション・レスポンシブ対応）。 |
-| `fonts.css` | 埋め込みフォント（k8x12Sドットフォント・GenZenGothicKaiC）の`@font-face`定義。base64埋め込み。 |
-| `utils.js` | 共通の小さい関数（スパム判定、日付フォーマット、引用文字列処理、虹色/五千兆円のHTML生成など）。他のどのファイルからも呼ばれる、依存の少ないファイル。 |
-| `layout.js` | 縦画面/横画面の判定、リサイズ対応、`transform: scale()`による全体スケール調整、タイトルとランキングのバランス調整。 |
-| `ranking.js` | 「直近100件の投稿者3選」「全投稿者一覧」の集計・表示。 |
-| `settings.js` | 投稿フォームのDOM要素、コメント形式/大きさ/色の切り替えUI、ログ表示ON/OFF、localStorageへの設定保存・復元。 |
-| `timeline.js` | 投稿カードの生成・更新・削除、引用カード生成、もっと見る/折りたたみ、投稿履歴のtxt書き出し機能。 |
-| `comments.js` | 流れる/中央固定コメントの表示、投稿再現（リプレイ）機能、読み上げ（Web Speech API）。 |
-| `firebase.js` | Firebaseの初期化、匿名認証、投稿の取得・送信、👍の更新、引用投稿の取得、同時接続管理、nicoAreaへのリアルタイム反映、フィードタブ切り替え、バージョンチェック。 |
-| `polls.js` | 投票の作成・投票・結果表示、nicoArea背景の投票UI、投票タブ（進行中／過去の結果）、投票の引用、終了時の結果発表表示。`firebase.js` が用意する `db` と `authReady` に依存するため、その後に読み込む。 |
+| `index.html` | 画面構造、フォーム、タブ、各パネル、外部ライブラリとJSの読み込み |
+| `style.css` | レイアウト、配色、カード、レスポンシブ表示、アニメーション |
+| `fonts.css` | k8x12S・GenZenGothicKaiCなどのフォント定義 |
+| `utils.js` | 投稿制限、サニタイズ補助、日付・引用・文字列処理などの共通関数 |
+| `layout.js` | 画面サイズや縦横比に応じたレイアウト調整 |
+| `ranking.js` | 直近100件を対象とする投稿者ランキング |
+| `settings.js` | 投稿フォーム、表示設定、ローカル設定の管理 |
+| `timeline.js` | 投稿カード、引用カード、タイムライン、履歴書き出し |
+| `comments.js` | 流れるコメント・中央固定コメント・読み上げ・投稿再現 |
+| `firebase.js` | Firebase初期化、匿名認証、投稿・いいね・引用・接続状況・バージョン管理 |
+| `polls.js` | 投票の作成・投票・結果表示・投票タブ・nicoArea上の投票表示 |
 
-**読み込み順序（`index.html`の`<script>`タグの並び）**:
-```
-utils.js → layout.js → ranking.js → settings.js → timeline.js → comments.js → firebase.js → polls.js
-```
-`firebase.js` は Firebase の初期化と `authReady` を用意し、`polls.js` はそれらを使うため、`polls.js` を後ろに置きます。**新しいJSファイルを増やす時は、依存先より後に読み込むようにしてください。**
+### JavaScriptの読み込み順
 
-## 公開URLとリポジトリ
+`index.html` では、次の順番で読み込みます。
 
-- **公開ページ（GitHub Pages）**: `https://omochinomocchili.github.io/nicotwi-bukka/`
-- **リポジトリ**: `https://github.com/omochinomocchili/nicotwi-bukka`
-- **不具合・要望**: `https://github.com/omochinomocchili/nicotwi-bukka/issues`
-
-`omochinomocchili` は個人アカウントではなく、部活全体で使っている共用アカウントです。
-
-## Firebaseの使い方（＝管理画面）
-
-このアプリには専用の「管理画面」はありません。**Firebaseコンソールが実質的な管理画面**です。
-
-- **アクセス方法**: [https://console.firebase.google.com/](https://console.firebase.google.com/) にアクセス → プロジェクト `nicotwibukka` を選択 → 左メニューの「Realtime Database」
-- ログインには、Googleアカウント **omochinomocchili@gmail.com**（このプロジェクトのFirebaseのオーナー）が必要です。自分個人のアカウントを追加する手順は[権限の引き継ぎ方法](#権限の引き継ぎ方法詳細)を参照してください。
-
-### 匿名認証
-
-ページ読み込み時に Firebase Authentication の匿名認証を実行します。利用者にログインやアカウント登録を求めず、Firebase が発行した匿名ユーザーの UID を取得してから、バージョン確認と Realtime Database の初期化を始めます。
-
-Firebase プロジェクトを新しく設定する場合は、Firebase コンソールの **Authentication → Sign-in method → Anonymous（匿名）** を有効にしてください。無効の場合は認証に失敗し、アプリは投稿フォームを無効にしてエラーを表示します。設定手順は[Firebase公式ドキュメント](https://firebase.google.com/docs/auth/web/anonymous-auth?hl=ja)を参照してください。
-
-匿名認証は利用者本人を確認するログイン機能ではありません。アカウント登録なしで Firebase 上の匿名 UID を発行し、Realtime Database の認証条件を満たすために使います。
-
-### データ構造
-
-Realtime Databaseの中身は、だいたいこんな構造になっています。
-
-```
-/tweets/{key}          … 投稿本体。keyは投稿時刻のミリ秒。
-    name, text, color, type, size, timestamp, tweetNumber,
-    reactions, reactedUsers, quote, appVersion など
-/quoteIndex/{tweetNumber} … 引用機能用。tweetNumber→投稿keyの対応表。
-/likedTweets/{key}     … 話題タブ用。👍が1件以上ついた投稿だけのコピー。
-/config/
-    totalTweetCount     … 累計投稿数（tweetNumberの元）
-    current_version_key … 現在の最新バージョン番号（バージョンチェック機能用）
-/presence/{uid}/{connectionId} … 匿名UIDごとの接続レコード（切断時は自動削除）
-/polls/{pollId}         … 投票のタイトル・選択肢・設定・開始/終了時刻
-/pollVotes/{pollId}/{uid} … 匿名UIDごとの投票内容
-/usageStats/           … 旧利用状況監視機能で使用していたノード。現行アプリは参照しない
+```text
+utils.js
+  → layout.js
+  → ranking.js
+  → settings.js
+  → timeline.js
+  → comments.js
+  → firebase.js
+  → polls.js
 ```
 
-### ルール（セキュリティルール）
+各ファイルはグローバルスコープの関数・変数を共有しています。依存関係を確認せずに順番を変更しないでください。特に `polls.js` は `firebase.js` が初期化するFirebase関連の変数・認証完了処理を利用するため、後ろに置きます。
 
-Realtime Database → ルール タブで編集します。現状のルールは以下の通りです（万一消えてしまった時の復元用に貼っておきます。**実際に反映されているものと差異が出ている可能性があるので、変更前に現物を必ず確認してください**）。
+## 動作の仕組み
+
+1. `index.html` がFirebase SDK、DOMPurify、CSS、各JavaScriptを読み込みます。
+2. `firebase.js` がFirebaseを初期化し、匿名認証を完了させます。
+3. Realtime Databaseから投稿・投票などを取得し、変更をリアルタイムに画面へ反映します。
+4. 投稿・投票などのデータはFirebaseに保存され、利用者間で共有されます。
+
+匿名認証は利用者にアカウント登録を求めずFirebase UIDを発行する仕組みです。本人確認や強固な不正防止を提供するものではありません。
+
+## Firebaseの設定
+
+### 使用プロジェクト
+
+現在のフロントエンド設定（`firebase.js`）は、次のFirebaseプロジェクトを参照しています。
+
+- **Firebase Project ID:** `nicotwibukka`
+- **Realtime Database:** `nicotwibukka-default-rtdb.asia-southeast1.firebasedatabase.app`
+
+FirebaseのAPIキー等はWebアプリから利用する公開設定値です。データ保護はAPIキーの秘匿ではなく、Authentication・Realtime Database Security Rules・必要に応じたApp Check等で行います。
+
+### 必要なFirebase機能
+
+- **Authentication:** Anonymous（匿名）ログインを有効にする
+- **Realtime Database:** データベースを作成し、下記のSecurity Rulesを設定する
+
+匿名認証が無効、またはデータベースのルールとアプリの書き込み仕様が一致しない場合、投稿・投票などが失敗します。
+
+## Realtime Databaseのデータ構造
+
+| パス | 用途 |
+|---|---|
+| `/config/totalTweetCount` | 投稿番号の採番に使う累計投稿数 |
+| `/config/current_version_key` | 利用中アプリのバージョン確認 |
+| `/tweets/{tweetId}` | 投稿本文・投稿者・表示設定・反応数など |
+| `/quoteIndex/{tweetNumber}` | 投稿番号から投稿キーを引く引用用インデックス |
+| `/likedTweets/{entry}` | 話題タブで参照するいいね付き投稿のデータ |
+| `/presence/{uid}/{connectionId}` | 匿名UIDごとの接続状態 |
+| `/polls/{pollId}` | 投票タイトル・選択肢・作成者・期間・表示設定 |
+| `/pollVotes/{pollId}/{uid}` | 匿名UIDごとの投票内容 |
+| `/usageStats` | 旧利用状況監視用。現行コードでは利用していない |
+
+投稿データには、名前・本文・色・表示形式・サイズ・タイムスタンプ・投稿番号のほか、いいね数、いいねしたユーザー、引用情報、アプリバージョンなどが含まれます。
+
+投票データにはタイトル、作成者名・UID、選択肢、開始・終了時刻、投票時間、単一／複数選択、途中経過・票数表示の設定が含まれます。
+
+## Security Rules
+
+以下は、現在Firebaseコンソールに設定されているものとして共有されたRealtime Database Rulesです。FirebaseコンソールのRealtime Database → ルールに設定されている内容が実際の適用値です。README内の記載とコンソールの内容が異なる場合は、コンソールを正として確認してください。
 
 ```json
-    {
+{
   "rules": {
     ".write": false,
-
     "config": {
       ".read": true,
-
       "totalTweetCount": {
         ".write": "newData.isNumber() && newData.val() >= 0 && ((!data.exists() && newData.val() === 1) || (data.isNumber() && newData.val() === data.val() + 1))"
       },
-
       "current_version_key": {
         ".read": true,
         ".write": "auth != null",
         ".validate": "newData.isString()"
       }
     },
-
     "tweets": {
       ".read": true,
       ".indexOn": ["tweetNumber"],
-
       "$tweet_id": {
         ".write": "!data.exists() && newData.hasChildren(['name', 'text', 'color', 'type', 'size', 'timestamp', 'tweetNumber'])",
-
         "name": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 15"
         },
-
         "text": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 14000"
         },
-
         "color": {
           ".validate": "newData.isString() && (newData.val().matches(/^#[0-9a-fA-F]{6}$/) || newData.val() === 'rainbow' || newData.val() === '5000trillion' || newData.val() === 'dot')"
         },
-
         "type": {
           ".validate": "newData.isString() && (newData.val() === 'normal' || newData.val() === 'center_fixed')"
         },
-
         "size": {
           ".validate": "newData.isString() && (newData.val() === 'small' || newData.val() === 'medium' || newData.val() === 'large')"
         },
-
         "timestamp": {
           ".validate": "newData.isNumber()"
         },
-
         "tweetNumber": {
           ".validate": "newData.isNumber()"
         },
-
         "reactions": {
           ".write": "newData.isNumber() && newData.val() >= 0",
           ".validate": "newData.isNumber() && newData.val() >= 0"
         },
-
         "reactedUsers": {
           ".write": "newData.hasChildren() || !newData.exists()",
           ".validate": "newData.hasChildren() || !newData.exists()",
-
           "$user_id": {
             ".validate": "newData.val() === true"
           }
         },
-
         "parent": {
           ".validate": "newData.isString() || !newData.exists()"
         },
-
         "quote": {
           ".validate": "newData.isNumber() || !newData.exists()"
         },
-
         "appVersion": {
           ".validate": "newData.isString()"
         },
-
         "$other": {
           ".validate": false
         }
       }
     },
-
     "presence": {
-  ".read": true,
-
-  "$user_id": {
-    ".write": "auth != null && auth.uid === $user_id",
-
-    "$connection_id": {
-      ".write": "auth != null && auth.uid === $user_id",
-      ".validate": "newData.isBoolean()"
-    }
-  }
-},
-
+      ".read": true,
+      "$user_id": {
+        ".write": "auth != null && auth.uid === $user_id",
+        "$connection_id": {
+          ".write": "auth != null && auth.uid === $user_id",
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    },
     "quoteIndex": {
       ".read": true,
-
       "$tweet_number": {
         ".write": "!data.exists() && newData.isString()",
         ".validate": "newData.isString()"
       }
     },
-
     "likedTweets": {
       ".read": true,
-
       "$entry": {
         ".write": true
       }
     },
-
     "usageStats": {
       ".read": false,
       ".write": false
+    },
+    "polls": {
+      ".read": true,
+      "$poll_id": {
+        ".write": "auth != null && ((!data.exists() && newData.exists() && newData.child('creatorUid').val() === auth.uid && newData.child('createdAt').val() <= now && newData.child('createdAt').val() >= now - 60000) || (data.exists() && newData.exists() && data.child('creatorUid').val() === auth.uid && newData.child('title').val() === data.child('title').val() && newData.child('creatorName').val() === data.child('creatorName').val() && newData.child('durationSeconds').val() === data.child('durationSeconds').val() && newData.child('createdAt').val() === data.child('createdAt').val() && newData.child('endsAt').val() === data.child('endsAt').val() && newData.child('creatorUid').val() === data.child('creatorUid').val() && newData.child('allowMultiple').val() === data.child('allowMultiple').val() && newData.child('showResults').val() === data.child('showResults').val() && newData.child('showVoters').val() === data.child('showVoters').val() && newData.child('choices').val() === data.child('choices').val()))",
+        ".validate": "newData.hasChildren(['title', 'creatorName', 'choices', 'durationSeconds', 'createdAt', 'endsAt', 'creatorUid', 'allowMultiple', 'showResults', 'showVoters'])",
+        "title": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80"
+        },
+        "tweetNumber": {
+          ".validate": "newData.isNumber() && newData.val() > 0"
+        },
+        "creatorName": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 15"
+        },
+        "choices": {
+          ".validate": "newData.hasChildren(['0', '1'])",
+          "0": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+          },
+          "1": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+          },
+          "2": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+          },
+          "3": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+          },
+          "4": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+          },
+          "5": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "durationSeconds": {
+          ".validate": "newData.isNumber() && (newData.val() === 10 || newData.val() === 15 || newData.val() === 30 || newData.val() === 60 || newData.val() === 120 || newData.val() === 180 || newData.val() === 240 || newData.val() === 300)"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber() && newData.val() <= now"
+        },
+        "endsAt": {
+          ".validate": "newData.isNumber() && newData.val() >= newData.parent().child('createdAt').val() && newData.val() <= newData.parent().child('createdAt').val() + newData.parent().child('durationSeconds').val() * 1000"
+        },
+        "creatorUid": {
+          ".validate": "newData.isString() && newData.val() === auth.uid"
+        },
+        "allowMultiple": {
+          ".validate": "newData.isBoolean()"
+        },
+        "showResults": {
+          ".validate": "newData.isBoolean()"
+        },
+        "showVoters": {
+          ".validate": "newData.isBoolean()"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "pollVotes": {
+      ".read": true,
+      "$poll_id": {
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && root.child('polls').child($poll_id).exists() && root.child('polls').child($poll_id).child('endsAt').val() > now",
+          ".validate": "(root.child('polls').child($poll_id).child('allowMultiple').val() === false && newData.isNumber() && (newData.val() === 0 || newData.val() === 1 || newData.val() === 2 || newData.val() === 3 || newData.val() === 4 || newData.val() === 5) && root.child('polls').child($poll_id).child('choices').child(newData.val() + '').exists()) || (root.child('polls').child($poll_id).child('allowMultiple').val() === true && newData.hasChildren())",
+          "0": {
+            ".validate": "newData.isNumber() && (newData.val() === 0 || newData.val() === 1 || newData.val() === 2 || newData.val() === 3 || newData.val() === 4 || newData.val() === 5) && root.child('polls').child($poll_id).child('choices').child(newData.val() + '').exists()"
+          },
+          "1": {
+            ".validate": "newData.isNumber() && (newData.val() === 0 || newData.val() === 1 || newData.val() === 2 || newData.val() === 3 || newData.val() === 4 || newData.val() === 5) && root.child('polls').child($poll_id).child('choices').child(newData.val() + '').exists()"
+          },
+          "2": {
+            ".validate": "newData.isNumber() && (newData.val() === 0 || newData.val() === 1 || newData.val() === 2 || newData.val() === 3 || newData.val() === 4 || newData.val() === 5) && root.child('polls').child($poll_id).child('choices').child(newData.val() + '').exists()"
+          },
+          "3": {
+            ".validate": "newData.isNumber() && (newData.val() === 0 || newData.val() === 1 || newData.val() === 2 || newData.val() === 3 || newData.val() === 4 || newData.val() === 5) && root.child('polls').child($poll_id).child('choices').child(newData.val() + '').exists()"
+          },
+          "4": {
+            ".validate": "newData.isNumber() && (newData.val() === 0 || newData.val() === 1 || newData.val() === 2 || newData.val() === 3 || newData.val() === 4 || newData.val() === 5) && root.child('polls').child($poll_id).child('choices').child(newData.val() + '').exists()"
+          },
+          "5": {
+            ".validate": "newData.isNumber() && (newData.val() === 0 || newData.val() === 1 || newData.val() === 2 || newData.val() === 3 || newData.val() === 4 || newData.val() === 5) && root.child('polls').child($poll_id).child('choices').child(newData.val() + '').exists()"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
     }
   }
 }
 ```
 
-`usageStats` のルールは旧利用状況監視機能の名残です。現行アプリの `firebase.js` はこのノードを読み書きしません。ただし、ほかのクライアントや外部スクリプトが使用していないか確認するまでは、Firebase側のルールを削除しないでください。
-`"$other": { ".validate": false }` は「`tweets`の中に、リストにないフィールドを追加すると書き込みごと拒否する」設定です。**新しいフィールドを投稿データに追加する時は、ここに`.validate`ルールを追加しないと保存できません**。
+### ルールの要点と注意
 
-### 無料枠について
+- ルートの `.write: false` により、明示的に許可された各パス以外への書き込みは拒否されます。
+- 投稿本体は新規作成のみ許可され、投稿者名15文字以内、本文14,000文字以内などの検証があります。未定義フィールドは `$other` により拒否されます。
+- `reactions` と `reactedUsers`、`likedTweets` は、ルール上は一般利用者からの書き込みを広く許可しています。いいね数や話題タブ用データの改ざんを完全には防げません。
+- `tweets`、`polls`、`pollVotes` などの読み取りは公開設定です。投稿内容・投票データは認証なしの一般利用者から閲覧できる前提で扱ってください。
+- 投票の作成・更新は匿名認証を要求し、作成者UIDと作成時刻を検証します。投票の基本設定は作成後に変更できない条件になっています。
+- 投票は終了時刻前のみ本人UIDから書き込めます。単一選択と複数選択の両方を検証します。
+- `usageStats` は読み書きとも拒否されており、現行アプリでは使用していません。
+- Rulesはサーバー側の検証です。JavaScript側の入力制限だけをセキュリティ対策として扱わないでください。
 
-Firebaseの無料プラン（Sparkプラン）には読み取り・書き込み・データ転送量などに上限があります。**現行アプリは`usageStats`に利用回数を記録せず、使用量が上限に近づいた時に投稿を自動停止する機能もありません。** 実際の使用量は Firebaseコンソール → 使用量と請求額 で確認してください。`usageStats`ノードやルールがFirebase上に残っていても、現行アプリは参照しません。削除する場合は、ほかのクライアントや外部スクリプトが利用していないことを確認してください。
+**注意:** 共有されたルールには、いいね関連の書き込み制限や投票複数選択配列の要素数・重複数に関する制限など、改善を検討できる箇所があります。挙動を変える前に、現行アプリの書き込み形式を確認し、テスト用データベースで検証してください。
 
-## 投稿を削除する方法
+## 開発・更新方法
 
-アプリ内に削除ボタンはありません。**Firebaseコンソールから直接消します**。
+### ローカルで確認する
 
-1. Firebaseコンソール → Realtime Database → データ タブを開く
-2. `tweets` を開き、該当の投稿を探す（キーはタイムスタンプなので、投稿の`timestamp`や`tweetNumber`の値を見て特定する）
-3. 該当のキー（例: `1785021175481`）にカーソルを合わせると出る「×」で削除
+1. リポジトリをクローン、またはGitHub Codespacesで開きます。
+2. `index.html` をブラウザで開きます。Firebase接続を含む動作確認にはインターネット接続が必要です。
+3. Firebaseの認証・ルール・接続先が正しいことを確認します。
 
-**注意点**:
-- 削除しても`tweetNumber`（通し番号）は詰め直されません（欠番になるだけ）。
-- その投稿が他の投稿から引用されていた場合、引用元は「見つかりません」表示になります。
-- 👍が付いていた投稿だった場合、`likedTweets`側にも複製が残っているので、あわせて`likedTweets/{同じキー}`も削除してください。
+### ブランチの更新
 
-## データのバックアップと復旧方法
-
-### 方法1: アプリ内の書き出し機能（手軽）
-
-画面下の「📥 履歴をtxtで書き出し」ボタンから、直近100件・今日の投稿・全期間のいずれかをtxtファイルとしてダウンロードできます。内容の記録用には十分ですが、複雑なアプリ丸ごとの復元には使えません。
-
-### 方法2: FirebaseのJSONエクスポート（確実）
-
-1. Firebaseコンソール → Realtime Database → データ タブ
-2. 一番上の階層（ルート）の右にある「︙」（メニュー）→ 「JSONをエクスポート」
-3. ダウンロードされたJSONファイルを保管しておく
-
-**定期的に（学期末や代替わりのタイミングなど）方法2でバックアップを取っておくことを強く推奨します。**
-
-### バックアップからの復元方法
-
-1. Firebaseコンソール → Realtime Database → データ タブを開く
-2. ルート（一番上の階層）の右の「︙」→「JSONをインポート」
-3. 保管しておいたJSONファイルを選択する
-
-**注意**: インポートするとその時点のデータベースの中身が丸ごと置き換わります。一部の投稿だけ元に戻したい場合でも、他の新しい投稿ごと上書きされてしまうので、可能であれば先に現在のデータもJSONエクスポートしておき、必要な部分だけ手動でマージすることを検討してください。
-
-### こんな時どうする？（トラブル別の対応）
-
-**投稿やデータが消えた・おかしくなった**
-→ 直近のJSONバックアップから、上の「バックアップからの復元方法」に沿って復元してください。定期的にバックアップを取っていないと、直近の状態は失われる可能性があります。
-
-**共用アカウント（`omochinomocchili@gmail.com`）のパスワードが分からなくなった**
-→ まず部室の物化部ノートと「物化部現役」グループLINEのノートを確認してください。両方とも見当たらない場合は、Googleアカウントに登録されている復旧用の電話番号・メールアドレスがあれば、ログイン画面の「パスワードをお忘れですか」から再設定できます。
-
-**GitHub Pagesが真っ白になった・更新が反映されない**
-→ [反映確認について](#反映確認について)を参照してください。それでも直らない場合は、リポジトリの Settings → Pages で公開設定（対象のブランチなど）が正しいか確認してください。
-
-**リポジトリやFirebaseプロジェクトを誤って削除してしまった**
-→ GitHubのリポジトリは、削除してから約90日以内であれば、アカウントの Settings → Repositories →「Deleted repositories」から復元できる可能性があります。Firebase（Google Cloud）のプロジェクトも、削除してから約30日以内であればGoogle Cloud Consoleの「IAMと管理」→「リソースの管理」から復元できる可能性があります。復元できるのは基本的にオーナー権限を持つ人だけですが、`omochinomocchili@gmail.com`がどちらのオーナーでもあるため、このアカウントでログインできれば手続き可能です。どちらも猶予期間を過ぎると完全に消えるため、気づいたらすぐに対応してください。
-
-## GitHubでの更新方法
-
-このアプリはビルド不要で、リポジトリに置いたファイルがそのままGitHub Pagesで公開されます。
-
-### 反映確認について
-
-- コミットしてから実際にサイトに反映されるまで、**数分かかることがあります**（GitHub Pagesのビルド待ち）。
-- ブラウザ側もキャッシュが残っていて古い表示のままになることがあります。変わらない時は、ハード再読み込み（Chromebookなら Shift+更新ボタン、PCなら Ctrl+Shift+R）を試してください。
-- それでも変わらない場合は、実際にコミットが反映されているか（GitHub上でファイルの中身を直接確認）を先に疑ってください。
-
-## 現在の開発リポジトリとブランチ
-
-この作業で更新している開発リポジトリは [kumasoutakun-dotcom/nicotwibukka](https://github.com/kumasoutakun-dotcom/nicotwibukka)、作業ブランチは `codex-connector-test` です。既存の公開URL・Firebaseプロジェクトの所有者情報は、実際のGitHub Pages設定やFirebaseコンソールと照合してから変更してください。リポジトリ名が変わっても、GitHub Pagesの公開URLが自動で同じ名前に変わるとは限りません。
-
-### Codespacesで変更を取り込む
-
-GitHub上でこのブランチにコミットした変更を、Codespacesの作業環境に反映するには、Codespacesのターミナルで次を実行します。
+この作業ブランチをCodespaces等に取り込む場合:
 
 ```bash
+git switch codex-connector-test
 git pull origin codex-connector-test
 ```
 
-GitHub上のコミットとCodespacesの作業ツリーは別です。pull後にブラウザのプレビューを再読み込みしてください。GitHub Pagesで公開している場合は、Pagesの公開元ブランチとデプロイ状況も別途確認してください。
+変更後は差分を確認し、意図したファイルだけをコミット・プッシュしてください。GitHub Pagesの公開元がこのブランチかどうかは、Settings → Pagesで別途確認します。
 
-## 詰まりやすいポイント・今後の課題
+### バージョン更新
 
-- JSファイルの読み込み順（`utils.js → layout.js → ranking.js → settings.js → timeline.js → comments.js → firebase.js → polls.js`）を変えると壊れます。特に`polls.js`はFirebase初期化後に読み込む必要があります。
-- Firebaseのルールで`"$other": { ".validate": false }`が設定されているため、投稿データに新しいフィールドを追加する時はルール側にも`.validate`を追加しないと保存できません。
-- バージョンチェック機能（`config/current_version_key`）があるので、コードを大きく更新した際は`firebase.js`内の`THIS_HTML_VERSION_KEY`もあわせて更新してください。
-- 分からないことがあれば、まずこのファイルとGitHubのコミット履歴（`git log`）、各JSファイル内のコメントを確認してください。
+`firebase.js` の `THIS_HTML_VERSION_KEY` と、`index.html` のタイトルに記載したバージョン表記は、リリース時に整合させてください。Firebaseの `config/current_version_key` も、運用中のバージョンチェック仕様に合わせて更新する必要があります。
 
+## 運用・保守
 
-## 投票機能
+### Firebaseデータのバックアップ
 
-投票機能は `polls.js` が担当し、Firebase Realtime Database の `/polls` と `/pollVotes` を使用します。`firebase.js` の後に読み込まれ、Firebaseの匿名認証完了後に監視を開始します。
+定期的にFirebaseコンソール → Realtime Database → データから、ルート階層のJSONをエクスポートして保管してください。代替わりや大きな変更の前にもバックアップを推奨します。
 
-### 現在の仕様
+JSONをインポートするとデータベース全体が置き換わるため、復元前に現在のデータもエクスポートしてください。一部だけ復元したい場合は、必要なノードだけを慎重に戻します。
 
-- 投稿フォームに入力した名前を投票作成者名として使用します。名前が空欄の場合は作成できません。
-- タイトルは最大80文字、選択肢は2〜6個（各最大40文字）です。
-- 投票期間は10秒、15秒、30秒、1分、2分、3分、4分、5分から選べます。
-- 単一選択／複数選択を選べます。複数選択の場合は選択肢を選んでからまとめて投票します。
-- 投票受付中は同じ匿名UIDから何度でも投票先を変更でき、最後に保存した内容が有効です。
-- 「投票前でも途中経過を表示」「選択肢ごとの票数を表示」を設定できます。
-- 得票率は波形（Wavy）の進捗表示と数値で表示します。
-- 進行中の投票は最大4件です。上限に達すると新規作成できません。
-- 投票タブには進行中の投票と過去の投票結果を分けて表示します。
-- 投票には通し番号が付き、番号を使って通常投稿から引用できます。投票そのものは通常の新着投稿カードには混ぜず、引用した通常投稿は通常どおり表示します。
-- 投票終了時、票が入っていた投票はnicoArea上で約10秒間、結果発表を表示します。
-- 投票データ・票数・状態はRealtime Databaseの変更を監視して同期します。
+### 投稿の削除
 
-### 制限・注意点
+アプリ内に投稿削除機能はありません。FirebaseコンソールのRealtime Databaseから該当する `tweets/{tweetId}` を削除します。必要に応じて、対応する `likedTweets` と `quoteIndex` も確認してください。削除後も累計投稿番号は自動で詰め直されません。
 
-- 進行中4件の上限はクライアント側で確認しています。複数端末から完全に同時に作成された場合の厳密な排他制御は保証しません。
-- 過去の投票データはFirebaseから自動削除しません。
-- 投票者の名前やUIDを公開する機能ではありません。票数表示は選択肢ごとの投票数です。
-- 投票作成ボタンや投票タブの表示位置・見た目は `index.html` と `polls.js` に分散しています。変更時は両方を確認してください。
+### 権限管理
 
-### Realtime Databaseのデータ構造
+GitHubリポジトリとFirebaseプロジェクトの管理者を複数人で維持してください。個人アカウントに必要な権限を付与し、実際にそのアカウントで管理画面へアクセスできることを確認します。パスワードや秘密情報をREADME・ソースコードに記載しないでください。
 
-```
-/polls/{pollId}
-  title             … 投票タイトル
-  creatorName       … 投稿フォームの名前
-  choices           … 選択肢（2〜6件）
-  durationSeconds   … 投票時間（秒）
-  createdAt         … 作成時刻（Unix timeのミリ秒）
-  endsAt            … 終了予定時刻（Unix timeのミリ秒）
-  creatorUid        … 作成者の匿名Firebase UID
-  allowMultiple     … 複数選択を許可するか
-  showResults       … 投票前の途中経過を表示するか
-  showVoters        … 選択肢ごとの票数を表示するか
-  tweetNumber       … 投票の通し番号
+### 不具合の切り分け
 
-/pollVotes/{pollId}/{anonymousUid}
-  単一選択           … 選択肢番号（number）
-  複数選択           … 選択肢番号の配列（number[]）
-```
+- 投稿できない: Authenticationの匿名認証、Realtime Database Rules、ブラウザの開発者コンソールを確認
+- 投票を作成・投票できない: `polls` / `pollVotes` のルールと匿名UID、投票終了時刻、データ形式を確認
+- 画面に変更が反映されない: GitHubのコミット、Pagesのデプロイ状況、ブラウザキャッシュを順に確認
+- 新しい投稿フィールドを追加した: `tweets/$tweet_id/$other` の検証ルールも含め、Security Rulesを更新
 
-### Firebase Security Rules
+## 既知の制約
 
-投票データの必須フィールド・型・文字数、匿名認証UID、投票期限、投票先の範囲をRealtime Database Rulesで検証してください。受付中は本人の票の上書きを許可し、他人の票を変更できないようにします。単一選択の数値と複数選択の配列の両方を許可する必要があります。
-
-**重要:** Firebaseコンソールに設定されているルールが正本です。READMEやJavaScriptを変更してもFirebase側のSecurity Rulesは自動更新されません。ルールを変更した場合は、投票作成・単一選択・複数選択・投票先変更・期限切れ後の書き込み拒否を実機で確認してください。
-
-Realtime Database Rulesには子要素数を数える `numChildren()` はありません。ルール式に使用しないでください。
+- Firebaseの公開読み取りノードは、誰でもデータを取得できる前提です。
+- 匿名認証はUIDを区別するためのもので、実在の利用者の本人確認ではありません。
+- いいね関連の一部パスはSecurity Rules上の書き込み制限が弱く、不正な値の登録を完全には防止できません。
+- 進行中投票数などの一部制御はクライアント側に依存します。複数端末からの同時操作に対する厳密な排他制御は保証されません。
+- Firebaseの無料枠・利用量はFirebaseコンソールで確認してください。現行コードに利用量の自動停止機能はありません。
+- READMEの説明と実装が食い違う場合は、対象ブランチのソースコードとFirebaseコンソールの実設定を確認し、このREADMEも更新してください。
