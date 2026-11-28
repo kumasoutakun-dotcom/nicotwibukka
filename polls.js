@@ -19,10 +19,12 @@
     .nico-poll-option { display:block; width:100%; min-height:32px; border:1px solid rgba(255,255,255,.35); border-radius:9px; padding:4px 8px 10px; color:white; background:rgba(255,255,255,.10); text-align:left; font:inherit; font-size:clamp(10px,1.7vw,15px); line-height:1.2; cursor:pointer; position:relative; overflow:hidden; isolation:isolate; }
     .nico-poll-option:disabled { opacity:.92; cursor:default; }
     .nico-poll-option.selected { border-color:#c5ddff; background:rgba(110,165,230,.22); }
-    .poll-wavy-progress { position:absolute; left:9px; right:9px; bottom:2px; z-index:0; width:calc(100% - 18px); height:8px; pointer-events:none; overflow:visible; }
-    .poll-wave-motion { transform-box:fill-box; transform-origin:left center; animation:poll-wave-shift 1.6s linear infinite; }
-    @keyframes poll-wave-shift { from { transform:translateX(0); } to { transform:translateX(-10%); } }
-    @media (prefers-reduced-motion:reduce) { .poll-wave-motion { animation:none; } }
+    .poll-wavy-progress { position:absolute; left:9px; right:9px; bottom:2px; z-index:0; width:calc(100% - 18px); height:10px; pointer-events:none; overflow:hidden; }
+    .poll-wave-path { transform-box:fill-box; transform-origin:center; transition:transform 500ms cubic-bezier(.2,.8,.2,1); }
+    .poll-wave-path.amplitude-on { transform:scaleY(1); animation:poll-wave-flow 1s linear infinite; }
+    .poll-wave-path.amplitude-off { transform:scaleY(0); }
+    @keyframes poll-wave-flow { from { translate:0 0; } to { translate:-40px 0; } }
+    @media (prefers-reduced-motion:reduce) { .poll-wave-path.amplitude-on { animation:none; } }
     .nico-poll-option .poll-option-label { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; gap:5px; min-height:16px; }
     .nico-poll-option .poll-option-name { overflow-wrap:anywhere; }
     .nico-poll-option .poll-option-result { white-space:nowrap; flex-shrink:0; font-family:'Akshar',sans-serif; font-size:1.02em; }
@@ -185,9 +187,18 @@
 
   function createWavyProgress(percent) {
     const svgNS = 'http://www.w3.org/2000/svg';
+    const progress = Math.max(0, Math.min(100, Number(percent) || 0)) / 100;
+    const width = 240;
+    const height = 10;
+    const strokeWidth = 4;
+    const wavelength = 40;
+    const halfWavelength = wavelength / 2;
+    const amplitude = progress <= 0.1 || progress >= 0.95 ? 0 : 1;
+    const head = progress * width;
+    const gap = Math.min(4, Math.max(0, head - strokeWidth / 2));
     const svg = document.createElementNS(svgNS, 'svg');
-    svg.setAttribute('class', 'poll-wavy-progress');
-    svg.setAttribute('viewBox', '0 0 120 16');
+    svg.setAttribute('class', 'poll-wavy-progress' + (amplitude ? ' is-wavy' : ''));
+    svg.setAttribute('viewBox', '0 0 240 10');
     svg.setAttribute('preserveAspectRatio', 'none');
     svg.setAttribute('aria-hidden', 'true');
 
@@ -195,43 +206,63 @@
     const clip = document.createElementNS(svgNS, 'clipPath');
     const clipName = 'pollWaveClip' + (++waveId);
     clip.setAttribute('id', clipName);
-    const rect = document.createElementNS(svgNS, 'rect');
-    rect.setAttribute('x', '0');
-    rect.setAttribute('y', '0');
-    rect.setAttribute('width', String(Math.max(0, Math.min(100, percent)) * 1.2));
-    rect.setAttribute('height', '16');
-    clip.appendChild(rect);
+    const clipRect = document.createElementNS(svgNS, 'rect');
+    clipRect.setAttribute('x', '0');
+    clipRect.setAttribute('y', '0');
+    clipRect.setAttribute('width', String(head));
+    clipRect.setAttribute('height', String(height));
+    clip.appendChild(clipRect);
     defs.appendChild(clip);
     svg.appendChild(defs);
 
-    // Material 3 Expressive の LinearWavyProgressIndicator に合わせ、
-    // 得票率を長さで表しながら、波形だけを一定速度で流す。
-    const wavePath = 'M0 8 C4 2 8 2 12 8 S20 14 24 8 S32 2 36 8 S44 14 48 8 S56 2 60 8 S68 14 72 8 S80 2 84 8 S92 14 96 8 S104 2 108 8 S116 14 120 8 S128 2 132 8 S140 14 144 8 S152 2 156 8 S164 14 168 8 S176 2 180 8 S188 14 192 8 S200 2 204 8 S212 14 216 8 S224 2 228 8 S236 14 240 8';
+    // AndroidX LinearProgressDrawingCache と同じ二次ベジェ波形を構築。
+    // 40dp wavelength / 3dp amplitude / 4dp round stroke / 10dp container。
+    const path = document.createElementNS(svgNS, 'path');
+    let d = 'M -80 0';
+    let anchorX = -60;
+    let controlX = -70;
+    let controlY = height - strokeWidth;
+    while (anchorX <= width + wavelength * 2) {
+      d += ' Q ' + controlX + ' ' + controlY + ' ' + anchorX + ' 0';
+      anchorX += halfWavelength;
+      controlX += halfWavelength;
+      controlY *= -1;
+    }
+    path.setAttribute('d', d);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', '#B8D5FF');
+    path.setAttribute('stroke-width', String(strokeWidth));
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('vector-effect', 'non-scaling-stroke');
+    path.setAttribute('clip-path', 'url(#' + clipName + ')');
 
-    const motion = document.createElementNS(svgNS, 'g');
-    motion.setAttribute('class', 'poll-wave-motion');
+    const wave = document.createElementNS(svgNS, 'g');
+    wave.setAttribute('class', 'poll-wave-path' + (amplitude ? ' amplitude-on' : ' amplitude-off'));
+    wave.appendChild(path);
+    svg.appendChild(wave);
 
-    const track = document.createElementNS(svgNS, 'path');
-    track.setAttribute('d', wavePath);
-    track.setAttribute('fill', 'none');
-    track.setAttribute('stroke', 'rgba(220,235,255,.34)');
-    track.setAttribute('stroke-width', '4.5');
-    track.setAttribute('stroke-linecap', 'round');
-    motion.appendChild(track);
+    // 公式実装と同様、進捗ヘッド付近に4dpの間隔を設けて残りのトラックを描く。
+    if (head < width) {
+      const track = document.createElementNS(svgNS, 'path');
+      track.setAttribute('d', 'M ' + Math.max(strokeWidth / 2, head + gap + (head >= strokeWidth / 2 ? strokeWidth : 0)) + ' 5 H ' + (width - strokeWidth / 2));
+      track.setAttribute('fill', 'none');
+      track.setAttribute('stroke', 'rgba(220,235,255,.42)');
+      track.setAttribute('stroke-width', String(strokeWidth));
+      track.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(track);
+    }
 
-    const indicator = document.createElementNS(svgNS, 'path');
-    indicator.setAttribute('d', wavePath);
-    indicator.setAttribute('fill', 'none');
-    indicator.setAttribute('stroke', '#B8D5FF');
-    indicator.setAttribute('stroke-width', '4.5');
-    indicator.setAttribute('stroke-linecap', 'round');
-    indicator.setAttribute('clip-path', 'url(#' + clipName + ')');
-    motion.appendChild(indicator);
-
-    svg.appendChild(motion);
+    // 低コントラストのトラックでも進捗終端が分かる公式のstop indicator。
+    if (progress > 0 && progress < 1) {
+      const stop = document.createElementNS(svgNS, 'circle');
+      stop.setAttribute('cx', String(Math.min(width - 2, Math.max(2, head))));
+      stop.setAttribute('cy', '5');
+      stop.setAttribute('r', '2');
+      stop.setAttribute('fill', '#B8D5FF');
+      svg.appendChild(stop);
+    }
     return svg;
   }
-
   function voteIndexes(value) {
     if (Array.isArray(value)) return value.map(Number).filter(Number.isInteger);
     if (typeof value === 'number' && Number.isInteger(value)) return [value];
