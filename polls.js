@@ -24,7 +24,7 @@
     .poll-wave-shape { transform-box:fill-box; transform-origin:center; transition:transform 300ms cubic-bezier(.2,.8,.2,1); }
     .poll-wave-shape.amplitude-on { transform:scaleY(1); }
     .poll-wave-shape.amplitude-off { transform:scaleY(0); }
-    @keyframes poll-wave-flow { from { transform:translateX(0); } to { transform:translateX(-24px); } }
+    @keyframes poll-wave-flow { from { transform:translateX(0); } to { transform:translateX(-8px); } }
     @media (prefers-reduced-motion:reduce) { .poll-wave-motion { animation:none; } }
     .nico-poll-option .poll-option-label { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; gap:5px; min-height:16px; }
     .nico-poll-option .poll-option-name { overflow-wrap:anywhere; }
@@ -199,7 +199,7 @@
     const width = 240;
     const height = 20;
     const strokeWidth = 4;
-    const wavelength = 24;
+    const wavelength = 8;
     const halfWavelength = wavelength / 2;
     const cap = strokeWidth / 2;
     const amplitude = 1;
