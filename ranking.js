@@ -61,6 +61,21 @@
 
 
   function renderUserStats() {
+    const slots = [
+        document.getElementById('top-rank-1'),
+        document.getElementById('top-rank-2'),
+        document.getElementById('top-rank-3'),
+    ];
+    if (typeof currentFeedTab !== 'undefined' && currentFeedTab === 'polls') {
+        slots.forEach((slot, i) => {
+            if (!slot) return;
+            slot.textContent = `${i + 1}位: ―`;
+            slot.style.opacity = '1';
+        });
+        topUserList.querySelectorAll('.equal-rank-info').forEach(el => el.remove());
+        return;
+    }
+
     const sortedByCount = Object.entries(userCounts).sort((a, b) => b[1] - a[1]);
 
     // 固定スロット3つを取得してリセット
