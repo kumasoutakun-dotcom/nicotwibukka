@@ -814,6 +814,50 @@ button:disabled {
     color: #888;
     font-style: italic;
 }
+.quote-poll-title {
+    color: #fff;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+.quote-poll-choices {
+    display: grid;
+    gap: 5px;
+}
+.quote-poll-choice {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 3px 10px;
+    align-items: center;
+    font-size: .95em;
+}
+.quote-poll-choice-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.quote-poll-choice-percent {
+    color: #c5ddff;
+    white-space: nowrap;
+    font-family: 'Akshar', 'GenZenGothicKaiC', sans-serif;
+}
+.quote-poll-choice-bar {
+    grid-column: 1 / -1;
+    display: block;
+    height: 5px;
+    overflow: hidden;
+    border-radius: 99px;
+    background: rgba(255,255,255,.12);
+}
+.quote-poll-choice-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: #8db9eb;
+}
+.quote-poll-total {
+    margin-top: 5px;
+    color: #aab7c4;
+    font-size: .85em;
+}
 .quote-card-clickable {
     cursor: pointer;
 }
