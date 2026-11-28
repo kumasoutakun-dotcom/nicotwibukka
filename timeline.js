@@ -310,6 +310,8 @@ function appendTweetToLog(key, text, color, timestamp, user) {
 }
 // ↑↑↑ appendTweetToLog 関数 ↑↑↑
 function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
+    // 投票データは独立した「投票」タブでのみ表示し、新着／話題の投稿一覧には混入させない。
+    if (!data || data.type === 'poll' || Array.isArray(data.choices)) return;
     // 引用(#数字)がある場合、表示用テキストからその「#数字」部分を取り除く
     // （引用カードが内容を表示するので、本文側は残りのコメント部分だけにする）
     const quoteStrippedText = data.quote ? stripQuoteMarker(data.text, data.quote) : data.text;
