@@ -32,6 +32,21 @@
     .poll-submit-vote { min-height:28px; border:0; border-radius:999px; padding:4px 12px; background:#c2dcff; color:#10243a; font:inherit; font-size:clamp(10px,1.5vw,13px); font-weight:bold; cursor:pointer; }
     .poll-submit-vote:disabled { opacity:.45; cursor:default; }
     .poll-empty { border:1px dashed rgba(255,255,255,.12); border-radius:12px; background:rgba(0,0,0,.12); }
+    #pollTabContent { color:#fff; font-family:'GenZenGothicKaiC',sans-serif; }
+    #pollTabContent[hidden] { display:none !important; }
+    .poll-tab-section { margin:0 0 18px; }
+    .poll-tab-heading { margin:12px 0 8px; color:#c5ddff; font-size:clamp(15px,2vw,22px); }
+    .poll-tab-card { margin:0 0 9px; padding:12px; border:1px solid rgba(255,255,255,.13); border-radius:13px; background:#122b42; }
+    .poll-tab-card.is-active { border-color:rgba(137,190,255,.45); }
+    .poll-tab-title { font-size:clamp(14px,1.8vw,19px); font-weight:bold; overflow-wrap:anywhere; }
+    .poll-tab-meta { margin:4px 0 9px; color:#b8c9d9; font-size:12px; }
+    .poll-tab-option { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 10px; margin-top:8px; font-size:13px; }
+    .poll-tab-option-name { overflow-wrap:anywhere; }
+    .poll-tab-option-count { color:#c5ddff; white-space:nowrap; font-family:'Akshar',sans-serif; }
+    .poll-tab-bar { grid-column:1 / -1; height:6px; border-radius:99px; overflow:hidden; background:rgba(255,255,255,.1); }
+    .poll-tab-bar-fill { height:100%; border-radius:inherit; background:#8db9eb; }
+    .poll-tab-empty { padding:14px; border:1px dashed rgba(255,255,255,.18); border-radius:12px; color:#b8c9d9; font-size:13px; text-align:center; }
+
     .nico-poll-announcement { align-items:center; text-align:center; gap:7px; background:linear-gradient(145deg,rgba(32,73,111,.96),rgba(12,25,42,.94)); border-color:rgba(184,213,255,.55); animation:pollAnnouncementIn .35s ease-out both; }
     .nico-poll-announcement-label { color:#c5ddff; font-size:clamp(13px,2.5vw,22px); font-weight:bold; }
     .nico-poll-announcement-winner { font-size:clamp(12px,2vw,18px); font-weight:bold; overflow-wrap:anywhere; }
@@ -380,6 +395,80 @@
     });
   }
 
+  function renderPollTab() {
+    const panel = document.getElementById('pollTabContent');
+    if (!panel) return;
+    const entries = Object.entries(polls || {}).sort((a, b) => Number(b[1].createdAt) - Number(a[1].createdAt));
+    const activePolls = entries.filter(([, poll]) => active(poll));
+    const finishedPolls = entries.filter(([, poll]) => !active(poll));
+    panel.replaceChildren();
+
+    const makeSection = (headingText, items, isActive) => {
+      const section = document.createElement('section');
+      section.className = 'poll-tab-section';
+      const heading = document.createElement('h3');
+      heading.className = 'poll-tab-heading';
+      heading.textContent = headingText + '（' + items.length + '）';
+      section.appendChild(heading);
+      if (!items.length) {
+        const empty = document.createElement('div');
+        empty.className = 'poll-tab-empty';
+        empty.textContent = isActive ? '進行中の投票はありません。' : '過去の投票はありません。';
+        section.appendChild(empty);
+        panel.appendChild(section);
+        return;
+      }
+      items.forEach(([id, poll]) => {
+        const card = document.createElement('article');
+        card.className = 'poll-tab-card' + (isActive ? ' is-active' : '');
+        const title = document.createElement('div');
+        title.className = 'poll-tab-title';
+        title.textContent = poll.title || '（タイトルなし）';
+        const meta = document.createElement('div');
+        meta.className = 'poll-tab-meta';
+        const date = poll.createdAt ? new Date(Number(poll.createdAt)).toLocaleString('ja-JP') : '';
+        const pollVotes = votes[id] || {};
+        const allVotes = Object.values(pollVotes);
+        const total = allVotes.length;
+        meta.textContent = (isActive ? '投票受付中 · 残り' + remaining(poll) + '秒' : '投票終了') +
+          (date ? ' · ' + date : '') + ' · ' + total + '票';
+        card.append(title, meta);
+        const choices = Array.isArray(poll.choices) ? poll.choices : Object.values(poll.choices || {});
+        const counts = choices.map((choice, index) => allVotes.reduce((sum, value) =>
+          sum + (voteIndexes(value).includes(index) ? 1 : 0), 0));
+        choices.forEach((choice, index) => {
+          const percent = total ? Math.round(counts[index] / total * 100) : 0;
+          const row = document.createElement('div');
+          row.className = 'poll-tab-option';
+          const name = document.createElement('span');
+          name.className = 'poll-tab-option-name';
+          name.textContent = choice;
+          const count = document.createElement('span');
+          count.className = 'poll-tab-option-count';
+          count.textContent = counts[index] + '票 · ' + percent + '%';
+          const bar = document.createElement('div');
+          bar.className = 'poll-tab-bar';
+          const fill = document.createElement('div');
+          fill.className = 'poll-tab-bar-fill';
+          fill.style.width = percent + '%';
+          bar.appendChild(fill);
+          row.append(name, count, bar);
+          card.appendChild(row);
+        });
+        if (!total) {
+          const noVotes = document.createElement('div');
+          noVotes.className = 'poll-tab-meta';
+          noVotes.textContent = 'まだ投票はありません。';
+          card.appendChild(noVotes);
+        }
+        section.appendChild(card);
+      });
+      panel.appendChild(section);
+    };
+    makeSection('進行中の投票', activePolls, true);
+    makeSection('過去の投票結果', finishedPolls, false);
+  }
+
   function render() {
     const now = Date.now();
     const activeList = activeEntries();
@@ -513,6 +602,7 @@
 
       layer.appendChild(card);
     });
+    renderPollTab();
   }
 
   async function castVote(id, value, poll) {
