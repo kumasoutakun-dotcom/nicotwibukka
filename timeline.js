@@ -352,10 +352,15 @@ function isPollStreamData(data) {
     const isQuoteOnly = !!data.quote && sanitizedText.trim() === '';
 
     // フィルタリングロジック（__SPLIT__除去後のテキストでチェック）
-    if (containsSpam(sanitizedText) || containsForbiddenHtmlTags(sanitizedText) ||
+    // 投稿時のスパム・連投判定は新規到着分だけに適用する。
+    // 過去投稿を一覧へ復元する際に現在の制限値で再判定すると、
+    // 同一ユーザーの過去投稿などが消え、一覧が1件だけになることがある。
+    if (isNewTweet && (
+        containsSpam(sanitizedText) || containsForbiddenHtmlTags(sanitizedText) ||
         sanitizedText.length > NORMAL_COMMENT_MAX_LENGTH ||
         (data.type !== 'center_fixed' && isPostIntervalViolated(data.name, data.timestamp)) ||
-        isSameContentRateLimited(data.name, sanitizedText, data.timestamp)) {
+        isSameContentRateLimited(data.name, sanitizedText, data.timestamp)
+    )) {
         console.log(`禁止コメントをスキップ： ${sanitizedText}`);
         removeTweetFromDOMAndMaps(key);
         delete allTweets[key];
