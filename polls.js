@@ -218,12 +218,12 @@
     // AndroidX LinearProgressDrawingCache と同じ二次ベジェ波形を構築。
     // 40dp wavelength / 3dp amplitude / 4dp round stroke / 10dp container。
     const path = document.createElementNS(svgNS, 'path');
-    let d = 'M -80 0';
+    let d = 'M -80 5';
     let anchorX = -60;
     let controlX = -70;
-    let controlY = height - strokeWidth;
+    let controlY = height / 2 + height - strokeWidth;
     while (anchorX <= width + wavelength * 2) {
-      d += ' Q ' + controlX + ' ' + controlY + ' ' + anchorX + ' 0';
+      d += ' Q ' + controlX + ' ' + controlY + ' ' + anchorX + ' 5';
       anchorX += halfWavelength;
       controlX += halfWavelength;
       controlY *= -1;
