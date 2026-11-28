@@ -78,12 +78,7 @@
 
     const sortedByCount = Object.entries(userCounts).sort((a, b) => b[1] - a[1]);
 
-    // 固定スロット3つを取得してリセット
-    const slots = [
-        document.getElementById('top-rank-1'),
-        document.getElementById('top-rank-2'),
-        document.getElementById('top-rank-3'),
-    ];
+    // 固定スロット3つは関数冒頭で取得した要素をそのまま使う。
     const rankLabels = ['1位', '2位', '3位'];
     slots.forEach((slot, i) => {
         slot.textContent = `${rankLabels[i]}: ―`;
