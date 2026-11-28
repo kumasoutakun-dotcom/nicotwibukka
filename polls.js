@@ -445,21 +445,6 @@
         card.append(hint, submit);
       }
 
-      if (poll.creatorUid === uid) {
-        const endButton = document.createElement('button');
-        endButton.type = 'button';
-        endButton.textContent = '投票を終了';
-        endButton.className = 'nico-poll-option';
-        endButton.style.fontSize = '11px';
-        endButton.addEventListener('click', async () => {
-          try {
-            await dbRef.child(id).update({ endsAt: Date.now() });
-          } catch (error) {
-            console.error('投票の終了に失敗しました', error);
-          }
-        });
-        card.appendChild(endButton);
-      }
       layer.appendChild(card);
     });
   }
