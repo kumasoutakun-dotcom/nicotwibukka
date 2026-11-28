@@ -61,7 +61,7 @@
     .nico-poll-announcement-winner { font-family:'Akshar','GenZenGothicKaiC',sans-serif; font-size:clamp(12px,2vw,18px); font-weight:bold; overflow-wrap:anywhere; }
     .nico-poll-announcement-detail { font-size:clamp(9px,1.4vw,12px); opacity:.85; }
     @keyframes pollAnnouncementIn { from { opacity:0; transform:scale(.96); } to { opacity:1; transform:scale(1); } }
-    #pollCreatorButton { position:relative; z-index:8; width:auto; min-width:0; margin:0 7px 0 0; padding:4px 14px; min-height:28px; font-size:14px; line-height:1.2; border:1px solid rgba(255,255,255,.22); border-radius:9px; background:#8FA7E8; color:#17233f; font-family:'k8x12S',sans-serif; cursor:pointer; white-space:nowrap; flex:0 0 auto; }
+    #pollCreatorButton { position:relative; z-index:8; box-sizing:border-box; width:auto; min-width:0; margin:0 7px 0 0; padding:10px 12px; min-height:0; font-size:24px; line-height:normal; border:1px solid rgba(255,255,255,.22); border-radius:9px; background:#8FA7E8; color:#17233f; font-family:'k8x12S',sans-serif; cursor:pointer; white-space:nowrap; flex:0 0 auto; }
     #pollCreatorButton:disabled { opacity:.55; cursor:not-allowed; }
     #pollCreatorModal { position:fixed; inset:0; z-index:10000; display:none; align-items:center; justify-content:center; padding:14px; background:rgba(0,0,0,.68); }
     #pollCreatorModal.open { display:flex; }
@@ -473,7 +473,7 @@
           (isActive ? '投票受付中' : '投票終了') + ' · ' + allVotes.length + '票';
 
         const content = document.createElement('div');
-        content.className = 'tweet-text-content size-medium poll-tab-content';
+        content.className = 'tweet-text-content size-medium poll-tab-content no-toggle';
         const title = document.createElement('div');
         title.className = 'poll-tab-title';
         title.textContent = poll.title || '（タイトルなし）';
