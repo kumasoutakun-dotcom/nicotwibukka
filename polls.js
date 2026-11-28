@@ -108,12 +108,19 @@
     </div>`;
   document.body.appendChild(modal);
 
-  const sidebar = document.getElementById('utilitySidebarContent');
   const createButton = document.createElement('button');
   createButton.type = 'button';
   createButton.id = 'pollCreatorButton';
   createButton.textContent = '＋ 投票を作成';
-  sidebar?.appendChild(createButton);
+
+  // 投稿フォームの操作列で、クリアボタンの直前に配置する。
+  const composerActions = document.querySelector('#commentForm .button-group');
+  const clearButton = document.getElementById('clearInputBtn');
+  if (composerActions && clearButton) {
+    composerActions.insertBefore(createButton, clearButton);
+  } else {
+    console.warn('投票作成ボタンの配置先が見つかりませんでした。');
+  }
 
   const choicesBox = modal.querySelector('#pollChoiceFields');
   const status = modal.querySelector('#pollCreatorStatus');
