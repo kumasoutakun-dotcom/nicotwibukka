@@ -421,9 +421,9 @@ if (predefinedColorSelect.value === 'rainbow') {
     showLoading('読み込み中…');
     db.ref('tweets').off(); 
 
-    if (toggleLogDisplayCheckbox.checked) { 
-      tweetStream.innerHTML = ''; 
-    }
+    // タブ再読込時は古いDOMを必ず破棄し、取得した直近100件を描き直す。
+    tweetStream.innerHTML = '';
+    tweetDomCache.clear();
     userCounts = {}; 
     userFirstTweetTime = {}; 
     activeFloatingComments.forEach(comment => comment.element.remove());
