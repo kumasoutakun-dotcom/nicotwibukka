@@ -507,9 +507,22 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       const quotedName = isPollQuote
           ? ((found.data.creatorName && found.data.creatorName.trim()) ? found.data.creatorName : '名無し')
           : ((found.data.name && found.data.name.trim()) ? found.data.name : '名無し');
+      const pollChoices = isPollQuote
+          ? (Array.isArray(found.data.choices) ? found.data.choices : Object.values(found.data.choices || {}))
+          : [];
+      const pollVoteValues = isPollQuote ? Object.values(found.votes || {}) : [];
+      const pollCounts = pollChoices.map((choice, index) => pollVoteValues.reduce((sum, value) => {
+          const indexes = Array.isArray(value) ? value : (typeof value === 'number' ? [value] :
+              (value && typeof value === 'object' ? Object.keys(value).filter(key => value[key] === true).map(Number) : []));
+          return sum + (indexes.includes(index) ? 1 : 0);
+      }, 0));
       const bodyHtml = isPollQuote
           ? '<div class="quote-poll-title">' + DOMPurify.sanitize(found.data.title || '（タイトルなし）') + '</div>' +
-            '<div class="quote-poll-choices">' + (Array.isArray(found.data.choices) ? found.data.choices : Object.values(found.data.choices || {})).map((choice, index) => '<div class="quote-poll-choice">' + (index + 1) + '. ' + DOMPurify.sanitize(String(choice)) + '</div>').join('') + '</div>'
+            '<div class="quote-poll-choices">' + pollChoices.map((choice, index) => {
+                const percent = pollVoteValues.length ? Math.round(pollCounts[index] / pollVoteValues.length * 100) : 0;
+                return '<div class="quote-poll-choice"><span class="quote-poll-choice-name">' + (index + 1) + '. ' + DOMPurify.sanitize(String(choice)) + '</span><span class="quote-poll-choice-percent">' + percent + '%</span><span class="quote-poll-choice-bar"><span style="width:' + percent + '%"></span></span></div>';
+            }).join('') + '</div>' +
+            '<div class="quote-poll-total">投票数 ' + pollVoteValues.length + '票</div>'
           : buildQuoteCardContentHtml(found.data);
       const quoteReacted = !isPollQuote && found.data.reactedUsers && found.data.reactedUsers[currentUser];
       const quoteReactionCount = isPollQuote ? 0 : (found.data.reactions || 0);
