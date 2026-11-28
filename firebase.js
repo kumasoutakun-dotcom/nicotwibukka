@@ -438,8 +438,11 @@ if (predefinedColorSelect.value === 'rainbow') {
 
         const data = snapshot.val();
         if (data) {
-            // 初期ロード時は全データを一旦allTweetsに格納
-            Object.assign(allTweets, data);
+            // 投票レコードを新着投稿一覧のキャッシュにも混ぜない
+            const timelineData = Object.fromEntries(
+                Object.entries(data).filter(([, tweet]) => !isPollStreamData(tweet))
+            );
+            Object.assign(allTweets, timelineData);
 
             // config/totalTweetCount が未設定の場合、既存ツイートの最大tweetNumberで初期化
             const totalCountSnapshot = await totalTweetCountRef.once('value');
@@ -539,7 +542,10 @@ if (predefinedColorSelect.value === 'rainbow') {
       showLoading('読み込み中…');
       try {
           const snapshot = await db.ref('likedTweets').orderByKey().limitToLast(100).once('value');
-          const data = snapshot.val() || {};
+          const rawData = snapshot.val() || {};
+          const data = Object.fromEntries(
+              Object.entries(rawData).filter(([, tweet]) => !isPollStreamData(tweet))
+          );
           Object.assign(allTweets, data);
           Object.keys(data).forEach((key, index) => {
               appendTweetToStream(key, data[key], index + 1, false);
@@ -566,6 +572,7 @@ if (predefinedColorSelect.value === 'rainbow') {
           if (currentFeedTab !== 'trend') return;
           const key = snapshot.key;
           const data = snapshot.val();
+          if (isPollStreamData(data)) return;
           allTweets[key] = data;
           appendTweetToStream(key, data, null, false);
 
@@ -588,6 +595,11 @@ if (predefinedColorSelect.value === 'rainbow') {
           if (currentFeedTab !== 'trend') return;
           const key = snapshot.key;
           const data = snapshot.val();
+          if (isPollStreamData(data)) {
+              removeTweetFromDOMAndMaps(key);
+              delete allTweets[key];
+              return;
+          }
           allTweets[key] = data;
           const cachedDiv = tweetDomCache.get(key);
           if (cachedDiv) {
@@ -639,6 +651,7 @@ if (predefinedColorSelect.value === 'rainbow') {
 
       const key = snapshot.key;
       const data = snapshot.val();
+      if (isPollStreamData(data)) return;
       allTweets[key] = data;
 
       appendTweetToStream(key, data, null, true);
@@ -673,6 +686,11 @@ if (predefinedColorSelect.value === 'rainbow') {
 
       const key = snapshot.key;
       const data = snapshot.val();
+      if (isPollStreamData(data)) {
+          removeTweetFromDOMAndMaps(key);
+          delete allTweets[key];
+          return;
+      }
       allTweets[key] = data; // allTweets の既存ツイートを更新
 
 
