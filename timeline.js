@@ -489,7 +489,10 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       // 本文中の「#quoteNumber」を引用元の内容に置換する（クリックでのジャンプ機能はそのまま）
       const mentionEls = div.querySelectorAll(`.quote-mention[data-quote-number="${quoteNumber}"]`);
       if (found) {
-          const plainSnippet = buildQuotePlainSnippet(found.data);
+          const isPollQuote = found.type === 'poll' || !!found.data.choices;
+          const plainSnippet = isPollQuote
+              ? DOMPurify.sanitize(found.data.title || '投票')
+              : buildQuotePlainSnippet(found.data);
           mentionEls.forEach(el => {
               el.textContent = `「${plainSnippet}」`;
           });
