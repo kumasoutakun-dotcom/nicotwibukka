@@ -311,15 +311,29 @@ function appendTweetToLog(key, text, color, timestamp, user) {
 // ↑↑↑ appendTweetToLog 関数 ↑↑↑
 function isPollStreamData(data) {
     if (!data || typeof data !== 'object') return false;
+    const number = Number(data.tweetNumber);
+    if (Number.isFinite(number) && number > 0 &&
+        window.pollTweetNumbers instanceof Set && window.pollTweetNumbers.has(number)) return true;
     const hasChoices = Array.isArray(data.choices) ||
         (!!data.choices && typeof data.choices === 'object');
     const hasPollMetadata = data.endsAt != null ||
-        data.durationSeconds != null || data.creatorUid != null ||
-        data.createdAt != null;
-    // 旧投票データには creatorUid が無い場合もあるため、複数の投票固有項目で判定する。
+        data.durationSeconds != null || data.creatorUid != null || data.createdAt != null;
     return data.type === 'poll' || data.poll === true || data.pollId != null ||
-        (hasChoices && hasPollMetadata &&
-         (data.title != null || data.creatorName != null || data.endsAt != null));
+        (hasChoices && hasPollMetadata);
+  }
+
+  function removePollCardsFromTweetStream() {
+    if (!tweetStream || !(window.pollTweetNumbers instanceof Set)) return;
+    Array.from(tweetStream.children).forEach(card => {
+      const key = card.getAttribute('data-key');
+      const record = allTweets && allTweets[key];
+      const number = Number(record && record.tweetNumber);
+      if (Number.isFinite(number) && window.pollTweetNumbers.has(number)) {
+        card.remove();
+        tweetDomCache.delete(key);
+        delete allTweets[key];
+      }
+    });
   }
 
   function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
