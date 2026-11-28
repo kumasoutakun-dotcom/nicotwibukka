@@ -41,17 +41,20 @@
     #twiArea.polls-tab-active #allUsers, #twiArea.polls-tab-active #replayPanel, #twiArea.polls-tab-active #adminPanel { display:none !important; }
     .poll-tab-section { margin:0 0 18px; }
     .poll-tab-heading { margin:12px 0 8px; color:#c5ddff; font-size:clamp(15px,2vw,22px); }
-    .poll-tab-card { margin:0 0 9px; padding:12px; border:1px solid rgba(255,255,255,.13); border-radius:13px; background:#122b42; }
-    .poll-tab-card.is-active { border-color:rgba(137,190,255,.45); }
-    .poll-tab-number { display:inline-block; margin-right:6px; color:#b8c9d9; font-family:'Akshar',sans-serif; font-size:.9em; font-weight:normal; }
-    .poll-tab-title { font-size:clamp(14px,1.8vw,19px); font-weight:bold; overflow-wrap:anywhere; }
-    .poll-tab-creator { margin-top:4px; color:#d3dfeb; font-size:12px; }
-    .poll-tab-meta { margin:3px 0 9px; color:#b8c9d9; font-size:12px; }
-    .poll-tab-option { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 10px; margin-top:8px; font-size:13px; }
+    .poll-tab-card { display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"title title" "creator creator" "meta meta" "options options" "actions actions"; row-gap:2px; column-gap:8px; align-items:center; margin:0 0 8px; padding:8px 15px; border:0; border-radius:12px; background:#10283d; box-shadow:0 2px 6px rgba(0,0,0,.3); color:#fff; }
+    .poll-tab-card.is-active { box-shadow:0 0 0 1px rgba(137,190,255,.32),0 2px 6px rgba(0,0,0,.3); }
+    .poll-tab-number { display:inline-block; margin-right:6px; color:#aaa; font-family:'k8x12S',sans-serif; font-size:.9em; font-weight:normal; cursor:pointer; }
+    .poll-tab-title { grid-area:title; min-width:0; font-size:clamp(14px,1.8vw,19px); font-weight:bold; overflow-wrap:anywhere; }
+    .poll-tab-creator { grid-area:creator; margin-top:1px; color:#d3dfeb; font-size:12px; }
+    .poll-tab-meta { grid-area:meta; margin:2px 0 5px; color:#aaa; font-size:12px; }
+    .poll-tab-options { grid-area:options; min-width:0; }
+    .poll-tab-option { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 10px; margin-top:7px; font-size:13px; }
     .poll-tab-option-name { overflow-wrap:anywhere; }
     .poll-tab-option-count { color:#c5ddff; white-space:nowrap; font-family:'Akshar',sans-serif; }
     .poll-tab-bar { grid-column:1 / -1; height:6px; border-radius:99px; overflow:hidden; background:rgba(255,255,255,.1); }
     .poll-tab-bar-fill { height:100%; border-radius:inherit; background:#8db9eb; }
+    .poll-tab-quote-actions { grid-area:actions; display:flex; justify-content:flex-start; margin-top:5px; }
+    .poll-tab-requote { border:0; border-radius:999px; padding:3px 9px; background:rgba(255,255,255,.08); color:#cfd8e3; cursor:pointer; font:inherit; font-size:12px; }
     .poll-tab-empty { padding:14px; border:1px dashed rgba(255,255,255,.18); border-radius:12px; color:#b8c9d9; font-size:13px; text-align:center; }
 
     .nico-poll-announcement { align-items:center; text-align:center; gap:7px; background:linear-gradient(145deg,rgba(32,73,111,.96),rgba(12,25,42,.94)); border-color:rgba(184,213,255,.55); animation:pollAnnouncementIn .35s ease-out both; }
@@ -436,14 +439,15 @@
           number.className = 'poll-tab-number';
           number.textContent = '#' + poll.tweetNumber;
           number.title = 'この投票を引用';
-          number.style.cursor = 'pointer';
           number.addEventListener('click', () => insertQuoteIntoForm(poll.tweetNumber));
           title.appendChild(number);
         }
         title.appendChild(document.createTextNode(poll.title || '（タイトルなし）'));
+
         const creator = document.createElement('div');
         creator.className = 'poll-tab-creator';
-        creator.textContent = '作成者: ' + (poll.creatorName || '不明');
+        creator.textContent = '作成者：' + (poll.creatorName || '不明');
+
         const meta = document.createElement('div');
         meta.className = 'poll-tab-meta';
         const date = poll.createdAt ? new Date(Number(poll.createdAt)).toLocaleString('ja-JP') : '';
@@ -452,19 +456,9 @@
         const total = allVotes.length;
         meta.textContent = (isActive ? '投票受付中' : '投票終了') +
           (date ? ' · ' + date : '') + ' · ' + total + '票';
-        card.append(title, creator, meta);
-        if (poll.tweetNumber) {
-          const actions = document.createElement('div');
-          actions.className = 'poll-tab-quote-actions';
-          const requote = document.createElement('button');
-          requote.type = 'button';
-          requote.className = 'poll-tab-requote';
-          requote.textContent = '🔄 引用';
-          requote.title = 'この投票を引用';
-          requote.addEventListener('click', () => insertQuoteIntoForm(poll.tweetNumber));
-          actions.appendChild(requote);
-          card.appendChild(actions);
-        }
+
+        const options = document.createElement('div');
+        options.className = 'poll-tab-options';
         const choices = Array.isArray(poll.choices) ? poll.choices : Object.values(poll.choices || {});
         const counts = choices.map((choice, index) => allVotes.reduce((sum, value) =>
           sum + (voteIndexes(value).includes(index) ? 1 : 0), 0));
@@ -485,13 +479,27 @@
           fill.style.width = percent + '%';
           bar.appendChild(fill);
           row.append(name, count, bar);
-          card.appendChild(row);
+          options.appendChild(row);
         });
         if (!total) {
           const noVotes = document.createElement('div');
           noVotes.className = 'poll-tab-meta';
           noVotes.textContent = 'まだ投票はありません。';
-          card.appendChild(noVotes);
+          options.appendChild(noVotes);
+        }
+
+        card.append(title, creator, meta, options);
+        if (poll.tweetNumber) {
+          const actions = document.createElement('div');
+          actions.className = 'poll-tab-quote-actions';
+          const requote = document.createElement('button');
+          requote.type = 'button';
+          requote.className = 'poll-tab-requote';
+          requote.textContent = '🔄 引用';
+          requote.title = 'この投票を引用';
+          requote.addEventListener('click', () => insertQuoteIntoForm(poll.tweetNumber));
+          actions.appendChild(requote);
+          card.appendChild(actions);
         }
         section.appendChild(card);
       });
