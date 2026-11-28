@@ -638,9 +638,13 @@ function getFloatingCommentYPosition(durationMs) { // durationMs が正確か確
       const rawText = data.text || '';
       const found = await fetchQuotedTweetInfo(data.quote);
       if (!found) return rawText;
-      const snippet = buildQuotePlainSnippet(found.data);
+      const isPollQuote = found.type === 'poll' || !!found.data.choices;
+      // nicoareaでは投票への引用番号を、投票タイトルに置き換えて流す
+      const snippet = isPollQuote
+          ? DOMPurify.sanitize(found.data.title || '投票')
+          : buildQuotePlainSnippet(found.data);
       const markerRegex = new RegExp('#' + data.quote + '\\s*');
-      const insertion = `#${data.quote}　${snippet}　`;
+      const insertion = isPollQuote ? `${snippet}　` : `#${data.quote}　${snippet}　`;
       if (markerRegex.test(rawText)) {
           return rawText.replace(markerRegex, insertion);
       }
