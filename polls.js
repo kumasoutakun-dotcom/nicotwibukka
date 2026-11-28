@@ -391,7 +391,7 @@
       const myVote = uid ? pollVotes[uid] : undefined;
       const hasVoted = myVote !== undefined && myVote !== null;
       const savedIndexes = voteIndexes(myVote);
-      const pending = pendingSelections.get(id) || new Set();
+      const pending = pendingSelections.get(id) || new Set(savedIndexes);
       const show = !!poll.showResults || !active(poll) || hasVoted;
 
       choices.forEach((choice, index) => {
@@ -414,10 +414,10 @@
         label.append(name, result);
         button.appendChild(label);
 
-        button.disabled = !active(poll) || hasVoted || submittingVotes.has(id);
+        button.disabled = !active(poll) || submittingVotes.has(id);
         button.addEventListener('click', () => {
           if (poll.allowMultiple) {
-            if (hasVoted || !active(poll)) return;
+            if (!active(poll) || submittingVotes.has(id)) return;
             const next = new Set(pendingSelections.get(id) || []);
             if (next.has(index)) next.delete(index);
             else next.add(index);
@@ -431,7 +431,7 @@
       });
       card.appendChild(optionList);
 
-      if (poll.allowMultiple && active(poll) && !hasVoted) {
+      if (poll.allowMultiple && active(poll)) {
         const hint = document.createElement('div');
         hint.className = 'poll-multi-hint';
         hint.textContent = '複数選択できます。選択後に投票を確定してください。';
@@ -470,8 +470,6 @@
     render();
     const voteRef = db.ref('pollVotes/' + id + '/' + uid);
     try {
-      const snapshot = await voteRef.once('value');
-      if (snapshot.exists()) return;
       await voteRef.set(value);
       pendingSelections.delete(id);
     } catch (error) {
