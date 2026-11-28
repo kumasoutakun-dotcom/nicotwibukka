@@ -513,7 +513,7 @@ function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
       const pollVoteValues = isPollQuote ? Object.values(found.votes || {}) : [];
       const pollCounts = pollChoices.map((choice, index) => pollVoteValues.reduce((sum, value) => {
           const indexes = Array.isArray(value) ? value : (typeof value === 'number' ? [value] :
-              (value && typeof value === 'object' ? Object.keys(value).filter(key => value[key] === true).map(Number) : []));
+              (value && typeof value === 'object' ? Object.keys(value).filter(key => /^\\d+$/.test(key) && value[key] !== null && value[key] !== false).map(key => Number(value[key])) : []));
           return sum + (indexes.includes(index) ? 1 : 0);
       }, 0));
       const bodyHtml = isPollQuote
