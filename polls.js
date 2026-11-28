@@ -34,6 +34,7 @@
     .poll-empty { border:1px dashed rgba(255,255,255,.12); border-radius:12px; background:rgba(0,0,0,.12); }
     #pollTabContent { color:#fff; font-family:'GenZenGothicKaiC',sans-serif; }
     #pollTabContent[hidden] { display:none !important; }
+    #twiArea.polls-tab-active #allUsers, #twiArea.polls-tab-active #replayPanel, #twiArea.polls-tab-active #adminPanel { display:none !important; }
     .poll-tab-section { margin:0 0 18px; }
     .poll-tab-heading { margin:12px 0 8px; color:#c5ddff; font-size:clamp(15px,2vw,22px); }
     .poll-tab-card { margin:0 0 9px; padding:12px; border:1px solid rgba(255,255,255,.13); border-radius:13px; background:#122b42; }
@@ -430,7 +431,7 @@
         const pollVotes = votes[id] || {};
         const allVotes = Object.values(pollVotes);
         const total = allVotes.length;
-        meta.textContent = (isActive ? '投票受付中 · 残り' + remaining(poll) + '秒' : '投票終了') +
+        meta.textContent = (isActive ? '投票受付中' : '投票終了') +
           (date ? ' · ' + date : '') + ' · ' + total + '票';
         card.append(title, meta);
         const choices = Array.isArray(poll.choices) ? poll.choices : Object.values(poll.choices || {});
