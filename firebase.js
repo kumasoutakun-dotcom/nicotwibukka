@@ -76,6 +76,46 @@ nicknameInput.addEventListener('input', (e) => {
     localStorage.setItem('userName', e.target.value);
 });
 
+ 
+// 投稿フォームの入力文字も、選択中の投稿カラー／フォントに合わせてプレビューする。
+function updateCommentInputAppearance() {
+    const colorMode = predefinedColorSelect.value;
+    const inputs = [
+        document.getElementById('comment'),
+        document.getElementById('comment_part1'),
+        document.getElementById('comment_part2')
+    ].filter(Boolean);
+
+    let previewColor = colorMode;
+    if (colorMode === 'custom') previewColor = commentColorPicker.value;
+    if (colorMode === '#FFFFFF' || /^#fff(?:fff)?$/i.test(previewColor)) previewColor = '#000000';
+
+    inputs.forEach(input => {
+        input.classList.toggle('comment-input-rainbow', colorMode === 'rainbow');
+        input.style.color = colorMode === 'rainbow' ? 'transparent' : (
+            colorMode === 'split_custom' ? '#000000' : previewColor
+        );
+        input.style.webkitTextFillColor = colorMode === 'rainbow' ? 'transparent' : (
+            colorMode === 'split_custom' ? '#000000' : previewColor
+        );
+        input.style.backgroundImage = colorMode === 'rainbow'
+            ? 'linear-gradient(90deg, #ff3030, #ff9d00, #ffe600, #00c853, #168cff, #b44cff, #ff3030)'
+            : 'none';
+        input.style.backgroundClip = colorMode === 'rainbow' ? 'text' : 'border-box';
+        input.style.webkitBackgroundClip = colorMode === 'rainbow' ? 'text' : 'border-box';
+        input.style.fontFamily = colorMode === 'dot'
+            ? "'k8x12S', sans-serif"
+            : colorMode === 'split_custom'
+                ? "serif"
+                : "'Akshar', 'GenZenGothicKaiC', sans-serif";
+        input.style.fontWeight = colorMode === 'split_custom' ? '900' : 'normal';
+        input.style.fontStyle = colorMode === 'split_custom' ? 'italic' : 'normal';
+    });
+}
+predefinedColorSelect.addEventListener('change', updateCommentInputAppearance);
+commentColorPicker.addEventListener('input', updateCommentInputAppearance);
+updateCommentInputAppearance();
+
      // --- インターネット接続監視ロジック ---
 function updateConnectionStatus() {
     const statusDiv = document.getElementById('connectionStatus');
