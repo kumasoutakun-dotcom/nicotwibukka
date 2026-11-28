@@ -252,12 +252,14 @@
       svg.appendChild(track);
     }
 
-    // 低コントラストのトラックでも進捗終端が分かる公式のstop indicator。
-    if (progress > 0 && progress < 1) {
+    // 公式実装と同じ終端stop indicator。進捗が右端に近づくと縮小して消える。
+    const stopSize = Math.max(0, Math.min(4, 238 - (head + 2)));
+    if (stopSize > 0) {
       const stop = document.createElementNS(svgNS, 'circle');
-      stop.setAttribute('cx', String(Math.min(width - 2, Math.max(2, head))));
+      const stopX = head + 2 > 236 ? head + 2 : 236;
+      stop.setAttribute('cx', String(stopX + stopSize / 2));
       stop.setAttribute('cy', '5');
-      stop.setAttribute('r', '2');
+      stop.setAttribute('r', String(stopSize / 2));
       stop.setAttribute('fill', '#B8D5FF');
       svg.appendChild(stop);
     }
