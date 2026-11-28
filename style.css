@@ -642,12 +642,14 @@ select#commentSize {
     margin-left: auto;
 }
 #pollCreatorButton {
-    padding: 5px 9px;
-    min-height: 32px;
-    font-size: 16px;
-    line-height: 1.2;
+    box-sizing: border-box;
+    width: auto;
+    padding: 10px 12px;
+    min-height: 0;
+    font-size: 24px;
+    line-height: normal;
     font-family: 'k8x12S', sans-serif;
-    background: #647fba;
+    background: #8FA7E8;
     color: white;
     border: none;
     border-radius: 8px;
