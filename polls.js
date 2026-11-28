@@ -61,7 +61,7 @@
     .nico-poll-announcement-winner { font-family:'Akshar','GenZenGothicKaiC',sans-serif; font-size:clamp(12px,2vw,18px); font-weight:bold; overflow-wrap:anywhere; }
     .nico-poll-announcement-detail { font-size:clamp(9px,1.4vw,12px); opacity:.85; }
     @keyframes pollAnnouncementIn { from { opacity:0; transform:scale(.96); } to { opacity:1; transform:scale(1); } }
-    #pollCreatorButton { position:relative; z-index:8; width:auto; min-width:0; margin:0 5px 0 0; padding:4px 8px; min-height:28px; font-size:14px; line-height:1.2; border:1px solid rgba(255,255,255,.18); border-radius:9px; background:rgba(130,170,220,.16); color:inherit; font-family:'k8x12S',sans-serif; cursor:pointer; white-space:nowrap; flex:0 0 auto; }
+    #pollCreatorButton { position:relative; z-index:8; width:auto; min-width:0; margin:0 7px 0 0; padding:4px 14px; min-height:28px; font-size:14px; line-height:1.2; border:1px solid rgba(255,255,255,.22); border-radius:9px; background:#8FA7E8; color:#17233f; font-family:'k8x12S',sans-serif; cursor:pointer; white-space:nowrap; flex:0 0 auto; }
     #pollCreatorButton:disabled { opacity:.55; cursor:not-allowed; }
     #pollCreatorModal { position:fixed; inset:0; z-index:10000; display:none; align-items:center; justify-content:center; padding:14px; background:rgba(0,0,0,.68); }
     #pollCreatorModal.open { display:flex; }
