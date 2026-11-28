@@ -456,11 +456,9 @@ function isPollStreamData(data) {
         updateTweetDisplay(div, data);
     }
 
-    if (!toggleLogDisplayCheckbox.checked) {
-        div.style.display = 'none';
-    } else {
-        div.style.display = ''; // CSS側の display:grid を使わせる（'block'で上書きしない）
-    }
+    // ログ表示設定は nicoArea の投稿ログだけに適用する。
+    // タイムラインの投稿カードは、設定にかかわらず常に表示する。
+    div.style.display = ''; // CSS側の display:grid を使わせる（'block'で上書きしない）
 
     const reactionBtn = div.querySelector(".tweet-meta-actions .reaction-btn");
     if (reactionBtn) {
