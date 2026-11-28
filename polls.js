@@ -351,7 +351,7 @@
     if (Array.isArray(value)) return value.map(Number).filter(Number.isInteger);
     if (typeof value === 'number' && Number.isInteger(value)) return [value];
     if (value && typeof value === 'object') {
-      return Object.keys(value).filter(key => /^\d+$/.test(key) && value[key] !== null && value[key] !== false).map(Number);
+      return Object.keys(value).filter(key => /^\d+$/.test(key) && value[key] !== null && value[key] !== false).map(key => Number(value[key]));
     }
     return [];
   }
