@@ -12,6 +12,7 @@
     #pollBackground.poll-count-2 { grid-template-columns:1fr 1fr; }
     #pollBackground.poll-count-3, #pollBackground.poll-count-4 { grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
     .nico-poll { min-width:0; min-height:0; overflow:hidden; border:1px solid rgba(255,255,255,.2); border-radius:12px; padding:clamp(5px,1.2vw,12px); box-sizing:border-box; background:rgba(12,25,42,.82); color:#fff; backdrop-filter:blur(3px); display:flex; flex-direction:column; justify-content:center; gap:4px; pointer-events:auto; font-family:'GenZenGothicKaiC',sans-serif; text-shadow:0 1px 2px #000; }
+    .nico-poll-number { font-family:'Akshar',sans-serif; font-size:clamp(10px,1.35vw,12px); opacity:.78; line-height:1; }
     .nico-poll-title { font-size:clamp(11px,2.1vw,19px); font-weight:bold; line-height:1.25; overflow-wrap:anywhere; }
     .nico-poll-meta { font-size:clamp(9px,1.4vw,12px); opacity:.82; line-height:1.25; }
     .nico-poll-creator { font-size:clamp(9px,1.35vw,11px); opacity:.9; overflow-wrap:anywhere; }
@@ -39,6 +40,7 @@
     .poll-tab-heading { margin:12px 0 8px; color:#c5ddff; font-size:clamp(15px,2vw,22px); }
     .poll-tab-card { margin:0 0 9px; padding:12px; border:1px solid rgba(255,255,255,.13); border-radius:13px; background:#122b42; }
     .poll-tab-card.is-active { border-color:rgba(137,190,255,.45); }
+    .poll-tab-number { display:inline-block; margin-right:6px; color:#b8c9d9; font-family:'Akshar',sans-serif; font-size:.9em; font-weight:normal; }
     .poll-tab-title { font-size:clamp(14px,1.8vw,19px); font-weight:bold; overflow-wrap:anywhere; }
     .poll-tab-meta { margin:4px 0 9px; color:#b8c9d9; font-size:12px; }
     .poll-tab-option { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 10px; margin-top:8px; font-size:13px; }
@@ -424,7 +426,13 @@
         card.className = 'poll-tab-card' + (isActive ? ' is-active' : '');
         const title = document.createElement('div');
         title.className = 'poll-tab-title';
-        title.textContent = poll.title || '（タイトルなし）';
+        if (poll.tweetNumber) {
+          const number = document.createElement('span');
+          number.className = 'poll-tab-number';
+          number.textContent = '#' + poll.tweetNumber;
+          title.appendChild(number);
+        }
+        title.appendChild(document.createTextNode(poll.title || '（タイトルなし）'));
         const meta = document.createElement('div');
         meta.className = 'poll-tab-meta';
         const date = poll.createdAt ? new Date(Number(poll.createdAt)).toLocaleString('ja-JP') : '';
@@ -521,6 +529,9 @@
       }
       card.dataset.pollId = id;
 
+      const number = document.createElement('div');
+      number.className = 'nico-poll-number';
+      number.textContent = poll.tweetNumber ? '#' + poll.tweetNumber : '';
       const title = document.createElement('div');
       title.className = 'nico-poll-title';
       title.textContent = poll.title || '（タイトルなし）';
@@ -533,7 +544,7 @@
       meta.className = 'nico-poll-meta';
       const left = remaining(poll);
       meta.textContent = left > 0 ? '投票受付中 · 残り' + left + '秒' : '投票終了';
-      card.append(title, creator, meta);
+      card.append(number, title, creator, meta);
 
       const optionList = document.createElement('div');
       optionList.className = 'nico-poll-options';
@@ -681,7 +692,20 @@
     updateCreateButton();
     const now = Date.now();
     const ref = db.ref('polls').push();
+    let pollNumber = 1;
+    const numberTransaction = await totalTweetCountRef.transaction(current => {
+      pollNumber = (Number(current) || 0) + 1;
+      return pollNumber;
+    });
+    if (!numberTransaction.committed) {
+      creatingPoll = false;
+      updateCreateButton();
+      status.textContent = '投稿番号を取得できませんでした。もう一度お試しください。';
+      return;
+    }
+    pollNumber = Number(numberTransaction.snapshot.val()) || pollNumber;
     const data = {
+      tweetNumber: pollNumber,
       title,
       creatorName,
       choices,
@@ -696,6 +720,7 @@
 
     try {
       await ref.set(data);
+      await db.ref('quoteIndex/' + pollNumber).set('poll:' + ref.key);
       polls[ref.key] = data;
       attachVoteListener(ref.key);
       modal.querySelector('#pollTitle').value = '';
