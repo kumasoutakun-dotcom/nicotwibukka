@@ -20,11 +20,11 @@
     .nico-poll-option:disabled { opacity:.92; cursor:default; }
     .nico-poll-option.selected { border-color:#c5ddff; background:rgba(110,165,230,.22); }
     .poll-wavy-progress { position:absolute; left:9px; right:9px; bottom:1px; z-index:0; width:calc(100% - 18px); height:14px; pointer-events:none; overflow:hidden; }
-    .poll-wave-motion { transform-box:fill-box; transform-origin:center; animation:poll-wave-flow 1s linear infinite; }
+    .poll-wave-motion { transform-box:fill-box; transform-origin:center; animation:poll-wave-flow 2.4s linear infinite; }
     .poll-wave-shape { transform-box:fill-box; transform-origin:center; transition:transform 300ms cubic-bezier(.2,.8,.2,1); }
     .poll-wave-shape.amplitude-on { transform:scaleY(1); }
     .poll-wave-shape.amplitude-off { transform:scaleY(0); }
-    @keyframes poll-wave-flow { from { transform:translateX(0); } to { transform:translateX(-40px); } }
+    @keyframes poll-wave-flow { from { transform:translateX(0); } to { transform:translateX(-24px); } }
     @media (prefers-reduced-motion:reduce) { .poll-wave-motion { animation:none; } }
     .nico-poll-option .poll-option-label { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; gap:5px; min-height:16px; }
     .nico-poll-option .poll-option-name { overflow-wrap:anywhere; }
@@ -199,10 +199,10 @@
     const width = 240;
     const height = 20;
     const strokeWidth = 4;
-    const wavelength = 40;
+    const wavelength = 24;
     const halfWavelength = wavelength / 2;
     const cap = strokeWidth / 2;
-    const amplitude = progress <= 0.1 || progress >= 0.95 ? 0 : 1;
+    const amplitude = 1;
     const head = progress * width;
     const gapSize = 4;
 
