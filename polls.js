@@ -113,13 +113,20 @@
   createButton.id = 'pollCreatorButton';
   createButton.textContent = '＋ 投票を作成';
 
-  // 投稿フォームの操作列で、クリアボタンの直前に配置する。
-  const composerActions = document.querySelector('#commentForm .button-group');
+  // 実際の投稿フォーム（#tweetForm）の操作列で、クリアボタンの直前に配置する。
+  const composerActions = document.querySelector('#tweetForm .button-group');
   const clearButton = document.getElementById('clearInputBtn');
-  if (composerActions && clearButton) {
+  if (composerActions && clearButton && clearButton.parentElement === composerActions) {
     composerActions.insertBefore(createButton, clearButton);
   } else {
-    console.warn('投票作成ボタンの配置先が見つかりませんでした。');
+    // DOM構造が変更されていても、投稿フォーム内にボタンを残す。
+    const form = document.getElementById('tweetForm');
+    if (form) {
+      const actions = form.querySelector('.button-group') || form;
+      actions.appendChild(createButton);
+    } else {
+      console.error('投票作成ボタンの配置先が見つかりませんでした。');
+    }
   }
 
   const choicesBox = modal.querySelector('#pollChoiceFields');
