@@ -20,7 +20,7 @@
     .nico-poll-option:disabled { opacity:.92; cursor:default; }
     .nico-poll-option.selected { border-color:#c5ddff; background:rgba(110,165,230,.22); }
     .poll-wavy-progress { position:absolute; left:9px; right:9px; bottom:1px; z-index:0; width:calc(100% - 18px); height:14px; pointer-events:none; overflow:hidden; }
-    .poll-wave-motion { transform-box:fill-box; transform-origin:center; animation:poll-wave-flow 2.4s linear infinite; }
+    .poll-wave-motion { transform-box:fill-box; transform-origin:center; animation:poll-wave-flow 1.2s linear infinite; }
     .poll-wave-shape { transform-box:fill-box; transform-origin:center; transition:transform 300ms cubic-bezier(.2,.8,.2,1); }
     .poll-wave-shape.amplitude-on { transform:scaleY(1); }
     .poll-wave-shape.amplitude-off { transform:scaleY(0); }
@@ -225,18 +225,14 @@
     defs.appendChild(clip);
     svg.appendChild(defs);
 
-    // AndroidX と同じく、最大振幅の基準パスを作り、progress に応じて縦方向に縮小。
-    // 左右に余分な波長を持たせ、位相移動時も端で波形が途切れないようにする。
-    let d = 'M -80 0';
-    let anchorX = -80 + halfWavelength;
-    let controlX = -80 + halfWavelength / 2;
-    let controlY = height - strokeWidth;
-    const pathLimit = width + wavelength * 2;
-    while (anchorX <= pathLimit) {
-      d += ' Q ' + controlX + ' ' + controlY + ' ' + anchorX + ' 0';
-      anchorX += halfWavelength;
-      controlX += halfWavelength;
-      controlY *= -1;
+    // 波長単位の曲線を個別に並べず、全幅をひと続きの正弦波パスとして生成。
+    // 十分細かくサンプリングし、位相移動しても波のつなぎ目が見えないようにする。
+    const waveAmplitude = height - strokeWidth * 3;
+    const sampleStep = 0.25;
+    let d = '';
+    for (let x = -80; x <= width + 80; x += sampleStep) {
+      const y = Math.sin((x / wavelength) * Math.PI * 2) * waveAmplitude;
+      d += (d ? ' L ' : 'M ') + x.toFixed(2) + ' ' + y.toFixed(3);
     }
 
     const motion = document.createElementNS(svgNS, 'g');
