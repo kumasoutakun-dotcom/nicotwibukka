@@ -469,7 +469,12 @@ if (predefinedColorSelect.value === 'rainbow') {
             // DocumentFragmentに一時的にappendして最後にまとめてDOMに追加
             sortedKeysAscending.forEach((key, index) => {
                 const tweet = allTweets[key];
-                appendTweetToStream(key, tweet, index + 1, false);
+                try {
+                    appendTweetToStream(key, tweet, index + 1, false);
+                } catch (renderError) {
+                    // 1件の古い／不正なレコードで残り99件の描画まで中断しない。
+                    console.error('投稿カードの描画をスキップしました:', key, renderError, tweet);
+                }
             });
             // ※ appendTweetToStreamがtweetStreamに直接appendするため
             // Fragment化は構造上困難。代わりにrAFで非同期描画に分散。
