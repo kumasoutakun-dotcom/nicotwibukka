@@ -41,8 +41,11 @@
     #twiArea.polls-tab-active #allUsers, #twiArea.polls-tab-active #replayPanel, #twiArea.polls-tab-active #adminPanel { display:none !important; }
     .poll-tab-section { margin:0 0 18px; }
     .poll-tab-heading { margin:12px 0 8px; color:#c5ddff; font-size:clamp(15px,2vw,22px); }
-    .poll-tab-card { display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"title title" "creator creator" "meta meta" "options options" "actions actions"; row-gap:2px; column-gap:8px; align-items:center; margin:0 0 8px; padding:8px 15px; border:0; border-radius:12px; background:#10283d; box-shadow:0 2px 6px rgba(0,0,0,.3); color:#fff; }
-    .poll-tab-card.is-active { box-shadow:0 0 0 1px rgba(137,190,255,.32),0 2px 6px rgba(0,0,0,.3); }
+    .poll-tab-card { display:grid; grid-template-columns:minmax(0,1fr); grid-template-areas:"title" "creator" "meta" "options" "actions"; row-gap:0; column-gap:8px; align-items:center; color:#fff; }
+    .poll-tab-card .poll-tab-title { font-size:1em; font-weight:700; line-height:1.2; }
+    .poll-tab-card .poll-tab-creator { margin-top:0; color:#d3dfeb; font-size:.55em; }
+    .poll-tab-card .poll-tab-meta { margin:2px 0 5px; color:#aaa; font-size:.5em; }
+    .poll-tab-card .poll-tab-option { font-size:.58em; }
     .poll-tab-number { display:inline-block; margin-right:6px; color:#aaa; font-family:'k8x12S',sans-serif; font-size:.9em; font-weight:normal; cursor:pointer; }
     .poll-tab-title { grid-area:title; min-width:0; font-size:clamp(14px,1.8vw,19px); font-weight:bold; overflow-wrap:anywhere; }
     .poll-tab-creator { grid-area:creator; margin-top:1px; color:#d3dfeb; font-size:12px; }
@@ -431,7 +434,7 @@
       }
       items.forEach(([id, poll]) => {
         const card = document.createElement('article');
-        card.className = 'poll-tab-card' + (isActive ? ' is-active' : '');
+        card.className = 'tweet poll-tab-card';
         const title = document.createElement('div');
         title.className = 'poll-tab-title';
         if (poll.tweetNumber) {
