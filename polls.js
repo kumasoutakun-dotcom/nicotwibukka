@@ -19,12 +19,13 @@
     .nico-poll-option { display:block; width:100%; min-height:32px; border:1px solid rgba(255,255,255,.35); border-radius:9px; padding:4px 8px 10px; color:white; background:rgba(255,255,255,.10); text-align:left; font:inherit; font-size:clamp(10px,1.7vw,15px); line-height:1.2; cursor:pointer; position:relative; overflow:hidden; isolation:isolate; }
     .nico-poll-option:disabled { opacity:.92; cursor:default; }
     .nico-poll-option.selected { border-color:#c5ddff; background:rgba(110,165,230,.22); }
-    .poll-wavy-progress { position:absolute; left:9px; right:9px; bottom:2px; z-index:0; width:calc(100% - 18px); height:10px; pointer-events:none; overflow:hidden; }
-    .poll-wave-path { transform-box:fill-box; transform-origin:center; transition:transform 500ms cubic-bezier(.2,.8,.2,1); }
-    .poll-wave-path.amplitude-on { transform:scaleY(1); animation:poll-wave-flow 1s linear infinite; }
-    .poll-wave-path.amplitude-off { transform:scaleY(0); }
-    @keyframes poll-wave-flow { from { translate:0 0; } to { translate:-40px 0; } }
-    @media (prefers-reduced-motion:reduce) { .poll-wave-path.amplitude-on { animation:none; } }
+    .poll-wavy-progress { position:absolute; left:9px; right:9px; bottom:1px; z-index:0; width:calc(100% - 18px); height:14px; pointer-events:none; overflow:hidden; }
+    .poll-wave-motion { transform-box:fill-box; transform-origin:center; animation:poll-wave-flow 1s linear infinite; }
+    .poll-wave-shape { transform-box:fill-box; transform-origin:center; transition:transform 300ms cubic-bezier(.2,.8,.2,1); }
+    .poll-wave-shape.amplitude-on { transform:scaleY(1); }
+    .poll-wave-shape.amplitude-off { transform:scaleY(0); }
+    @keyframes poll-wave-flow { from { transform:translateX(0); } to { transform:translateX(-40px); } }
+    @media (prefers-reduced-motion:reduce) { .poll-wave-motion { animation:none; } }
     .nico-poll-option .poll-option-label { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; gap:5px; min-height:16px; }
     .nico-poll-option .poll-option-name { overflow-wrap:anywhere; }
     .nico-poll-option .poll-option-result { white-space:nowrap; flex-shrink:0; font-family:'Akshar',sans-serif; font-size:1.02em; }
@@ -188,17 +189,23 @@
   function createWavyProgress(percent) {
     const svgNS = 'http://www.w3.org/2000/svg';
     const progress = Math.max(0, Math.min(100, Number(percent) || 0)) / 100;
+
+    // AndroidX LinearProgressDrawingCache の線形確定形式を SVG に移植。
+    // 公式の波形生成（交互の二次ベジェ）、PathMeasure 相当の区間切り出し、
+    // 進捗ヘッド周辺のトラックギャップ、終端ストップインジケーターを再現する。
     const width = 240;
-    const height = 10;
+    const height = 20;
     const strokeWidth = 4;
     const wavelength = 40;
     const halfWavelength = wavelength / 2;
+    const cap = strokeWidth / 2;
     const amplitude = progress <= 0.1 || progress >= 0.95 ? 0 : 1;
     const head = progress * width;
-    const gap = Math.min(4, Math.max(0, head - strokeWidth / 2));
+    const gapSize = 4;
+
     const svg = document.createElementNS(svgNS, 'svg');
-    svg.setAttribute('class', 'poll-wavy-progress' + (amplitude ? ' is-wavy' : ''));
-    svg.setAttribute('viewBox', '0 0 240 10');
+    svg.setAttribute('class', 'poll-wavy-progress');
+    svg.setAttribute('viewBox', '0 0 240 20');
     svg.setAttribute('preserveAspectRatio', 'none');
     svg.setAttribute('aria-hidden', 'true');
 
@@ -215,36 +222,48 @@
     defs.appendChild(clip);
     svg.appendChild(defs);
 
-    // AndroidX LinearProgressDrawingCache と同じ二次ベジェ波形を構築。
-    // 40dp wavelength / 3dp amplitude / 4dp round stroke / 10dp container。
-    const path = document.createElementNS(svgNS, 'path');
-    let d = 'M -80 5';
-    let anchorX = -60;
-    let controlX = -70;
-    let controlY = height / 2 + height - strokeWidth;
-    while (anchorX <= width + wavelength * 2) {
-      d += ' Q ' + controlX + ' ' + controlY + ' ' + anchorX + ' 5';
+    // AndroidX と同じく、最大振幅の基準パスを作り、progress に応じて縦方向に縮小。
+    // 左右に余分な波長を持たせ、位相移動時も端で波形が途切れないようにする。
+    let d = 'M -80 0';
+    let anchorX = -80 + halfWavelength;
+    let controlX = -80 + halfWavelength / 2;
+    let controlY = height - strokeWidth;
+    const pathLimit = width + wavelength * 2;
+    while (anchorX <= pathLimit) {
+      d += ' Q ' + controlX + ' ' + controlY + ' ' + anchorX + ' 0';
       anchorX += halfWavelength;
       controlX += halfWavelength;
       controlY *= -1;
     }
-    path.setAttribute('d', d);
-    path.setAttribute('fill', 'none');
-    path.setAttribute('stroke', '#B8D5FF');
-    path.setAttribute('stroke-width', String(strokeWidth));
-    path.setAttribute('stroke-linecap', 'round');
-    path.setAttribute('vector-effect', 'non-scaling-stroke');
-    path.setAttribute('clip-path', 'url(#' + clipName + ')');
 
-    const wave = document.createElementNS(svgNS, 'g');
-    wave.setAttribute('class', 'poll-wave-path' + (amplitude ? ' amplitude-on' : ' amplitude-off'));
-    wave.appendChild(path);
-    svg.appendChild(wave);
+    const motion = document.createElementNS(svgNS, 'g');
+    motion.setAttribute('class', 'poll-wave-motion');
+    motion.setAttribute('clip-path', 'url(#' + clipName + ')');
 
-    // 公式実装と同様、進捗ヘッド付近に4dpの間隔を設けて残りのトラックを描く。
-    if (head < width) {
+    const shape = document.createElementNS(svgNS, 'g');
+    shape.setAttribute('class', 'poll-wave-shape ' + (amplitude ? 'amplitude-on' : 'amplitude-off'));
+    shape.setAttribute('transform', 'translate(0 10)');
+
+    const progressPath = document.createElementNS(svgNS, 'path');
+    progressPath.setAttribute('d', d);
+    progressPath.setAttribute('fill', 'none');
+    progressPath.setAttribute('stroke', '#B8D5FF');
+    progressPath.setAttribute('stroke-width', String(strokeWidth));
+    progressPath.setAttribute('stroke-linecap', 'round');
+    progressPath.setAttribute('vector-effect', 'non-scaling-stroke');
+    shape.appendChild(progressPath);
+    motion.appendChild(shape);
+    svg.appendChild(motion);
+
+    // Track は進捗ヘッドの前後に公式と同じ gap + 丸端分の余白を確保して描画。
+    const adjustedGap = head < cap ? 0 : Math.min(head - cap, gapSize);
+    const activeVisible = head >= cap;
+    const trackSpacing = activeVisible ? adjustedGap + cap * 2 : adjustedGap;
+    const trackStart = Math.max(cap, head + trackSpacing);
+    const trackEnd = width - cap;
+    if (trackEnd > trackStart) {
       const track = document.createElementNS(svgNS, 'path');
-      track.setAttribute('d', 'M ' + Math.max(strokeWidth / 2, head + gap + (head >= strokeWidth / 2 ? strokeWidth : 0)) + ' 5 H ' + (width - strokeWidth / 2));
+      track.setAttribute('d', 'M ' + trackEnd + ' 10 H ' + trackStart);
       track.setAttribute('fill', 'none');
       track.setAttribute('stroke', 'rgba(220,235,255,.42)');
       track.setAttribute('stroke-width', String(strokeWidth));
@@ -252,17 +271,23 @@
       svg.appendChild(track);
     }
 
-    // 公式実装と同じ終端stop indicator。進捗が右端に近づくと縮小して消える。
-    const stopSize = Math.max(0, Math.min(4, 238 - (head + 2)));
+    // 公式 drawStopIndicator と同様、右端の丸い停止マーカーは進捗が近づくと縮小。
+    let stopSize = Math.min(strokeWidth, 4);
+    let stopX = width - stopSize;
+    const progressX = head + cap;
+    if (stopX <= progressX) {
+      stopSize = Math.max(0, stopSize - (progressX - stopX));
+      stopX = progressX;
+    }
     if (stopSize > 0) {
       const stop = document.createElementNS(svgNS, 'circle');
-      const stopX = head + 2 > 236 ? head + 2 : 236;
       stop.setAttribute('cx', String(stopX + stopSize / 2));
-      stop.setAttribute('cy', '5');
+      stop.setAttribute('cy', '10');
       stop.setAttribute('r', String(stopSize / 2));
       stop.setAttribute('fill', '#B8D5FF');
       svg.appendChild(stop);
     }
+
     return svg;
   }
   function voteIndexes(value) {
