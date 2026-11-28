@@ -561,6 +561,7 @@ if (predefinedColorSelect.value === 'rainbow') {
   async function switchFeedTab(tab) {
       if (tab === currentFeedTab) return;
       currentFeedTab = tab;
+      if (typeof renderUserStats === 'function') renderUserStats();
 
       const tabNewBtn = document.getElementById('tabNewBtn');
       const tabTrendBtn = document.getElementById('tabTrendBtn');
