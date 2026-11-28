@@ -124,6 +124,7 @@
   let timer = null;
   let waveId = 0;
   let creatingPoll = false;
+  let migratingLegacyPolls = false;
   const pendingSelections = new Map();
   const submittingVotes = new Set();
   const knownActivePollIds = new Set();
@@ -674,11 +675,47 @@
     voteListeners.set(id, { ref, handler });
   }
 
+  async function migrateLegacyPollNumbers() {
+    if (migratingLegacyPolls || !db || !totalTweetCountRef) return;
+    const missing = Object.entries(polls || {})
+      .filter(([, poll]) => poll && !Number(poll.tweetNumber))
+      .sort((a, b) => Number(a[1].createdAt) - Number(b[1].createdAt));
+    if (!missing.length) return;
+
+    migratingLegacyPolls = true;
+    try {
+      for (const [id] of missing) {
+        let candidate = 1;
+        const countResult = await totalTweetCountRef.transaction(current => {
+          candidate = (Number(current) || 0) + 1;
+          return candidate;
+        });
+        if (!countResult.committed) continue;
+        candidate = Number(countResult.snapshot.val()) || candidate;
+
+        const numberResult = await db.ref('polls/' + id + '/tweetNumber').transaction(current =>
+          current == null || Number(current) === 0 ? candidate : current
+        );
+        const assignedNumber = Number(numberResult.snapshot.val());
+        if (assignedNumber > 0) {
+          await db.ref('quoteIndex/' + assignedNumber).set('poll:' + id);
+          if (polls[id]) polls[id].tweetNumber = assignedNumber;
+        }
+      }
+    } catch (error) {
+      console.error('既存投票の投稿番号移行に失敗しました', error);
+    } finally {
+      migratingLegacyPolls = false;
+      renderPollTab();
+    }
+  }
+
   function start() {
     if (!db || !uid || pollListener) return;
     dbRef = db.ref('polls');
     pollListener = dbRef.on('value', snapshot => {
       polls = snapshot.val() || {};
+      migrateLegacyPollNumbers();
       Object.entries(polls).forEach(([id, poll]) => {
         if (active(poll)) knownActivePollIds.add(id);
         attachVoteListener(id);
