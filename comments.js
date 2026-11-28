@@ -647,7 +647,7 @@ function getFloatingCommentYPosition(durationMs) { // durationMs が正確か確
           const details = choices.map((choice, index) => {
               const count = voteValues.reduce((sum, value) => {
                   const indexes = Array.isArray(value) ? value : (typeof value === 'number' ? [value] :
-                      (value && typeof value === 'object' ? Object.keys(value).filter(key => value[key] === true).map(Number) : []));
+                      (value && typeof value === 'object' ? Object.keys(value).filter(key => /^\\d+$/.test(key) && value[key] !== null && value[key] !== false).map(key => Number(value[key])) : []));
                   return sum + (indexes.includes(index) ? 1 : 0);
               }, 0);
               const percent = voteValues.length ? Math.round(count / voteValues.length * 100) : 0;
