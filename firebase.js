@@ -397,10 +397,18 @@ if (predefinedColorSelect.value === 'rainbow') {
           const indexSnap = await db.ref('quoteIndex/' + quoteNumber).once('value');
           const quotedKey = indexSnap.val();
           if (!quotedKey) return null; // quoteIndexに無い（移行前の古い投稿など）
+          // 投票は quoteIndex に poll:<pollId> として保存されている
+          if (typeof quotedKey === 'string' && quotedKey.startsWith('poll:')) {
+              const pollId = quotedKey.slice(5);
+              const pollSnap = await db.ref('polls/' + pollId).once('value');
+              const pollData = pollSnap.val();
+              if (!pollData) return null;
+              return { key: pollId, data: pollData, type: 'poll' };
+          }
           const tweetSnap = await db.ref('tweets/' + quotedKey).once('value');
           const tweetData = tweetSnap.val();
           if (!tweetData) return null;
-          return { key: quotedKey, data: tweetData };
+          return { key: quotedKey, data: tweetData, type: 'tweet' };
       } catch (e) {
           console.error('引用元投稿の取得に失敗しました:', e);
           return null;
