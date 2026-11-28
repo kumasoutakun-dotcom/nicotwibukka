@@ -499,8 +499,13 @@ if (predefinedColorSelect.value === 'rainbow') {
 
       const tabNewBtn = document.getElementById('tabNewBtn');
       const tabTrendBtn = document.getElementById('tabTrendBtn');
+      const tabPollBtn = document.getElementById('tabPollBtn');
+      const pollTabContent = document.getElementById('pollTabContent');
       if (tabNewBtn) tabNewBtn.classList.toggle('active-tab', tab === 'new');
       if (tabTrendBtn) tabTrendBtn.classList.toggle('active-tab', tab === 'trend');
+      if (tabPollBtn) tabPollBtn.classList.toggle('active-tab', tab === 'polls');
+      if (pollTabContent) pollTabContent.hidden = tab !== 'polls';
+      if (tweetStream) tweetStream.style.display = tab === 'polls' ? 'none' : '';
 
       stopLiveTweetListener();
       stopTrendingLiveListener();
@@ -508,10 +513,11 @@ if (predefinedColorSelect.value === 'rainbow') {
       tweetDomCache.clear();
       allTweets = {};
 
+      if (tab === 'polls') return;
       if (tab === 'new') {
           await loadInitialTweetsAndMonitorChanges();
           setupRealtimeListeners();
-      } else {
+      } else if (tab === 'trend') {
           await loadTrendingTweets();
           setupTrendingRealtimeListeners();
       }
