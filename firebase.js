@@ -403,7 +403,8 @@ if (predefinedColorSelect.value === 'rainbow') {
               const pollSnap = await db.ref('polls/' + pollId).once('value');
               const pollData = pollSnap.val();
               if (!pollData) return null;
-              return { key: pollId, data: pollData, type: 'poll' };
+              const voteSnap = await db.ref('pollVotes/' + pollId).once('value');
+              return { key: pollId, data: pollData, type: 'poll', votes: voteSnap.val() || {} };
           }
           const tweetSnap = await db.ref('tweets/' + quotedKey).once('value');
           const tweetData = tweetSnap.val();
