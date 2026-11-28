@@ -501,6 +501,53 @@ if (predefinedColorSelect.value === 'rainbow') {
   let currentFeedTab = 'new'; // 'new' | 'trend'
   let likedTweetsQueryRef = null;
 
+  // nicoArea専用の投稿監視。フィードタブ切替で止めず、どのタブでも新規投稿を流す。
+  let nicoAreaTweetQueryRef = null;
+  let nicoAreaListenerInitialized = false;
+
+  async function setupNicoAreaRealtimeListener() {
+      if (nicoAreaListenerInitialized) return;
+      nicoAreaListenerInitialized = true;
+
+      try {
+          // 現在の最新キーを基準にし、過去の投稿を再表示せず新規分だけ監視する。
+          const latestSnapshot = await db.ref('tweets').orderByKey().limitToLast(1).once('value');
+          let lastKey = null;
+          latestSnapshot.forEach(child => { lastKey = child.key; });
+
+          const query = lastKey
+              ? db.ref('tweets').orderByKey().startAfter(lastKey)
+              : db.ref('tweets').orderByKey();
+          nicoAreaTweetQueryRef = query;
+
+          query.on('child_added', async snapshot => {
+              const key = snapshot.key;
+              const data = snapshot.val();
+              if (!data || isPollStreamData(data)) return;
+
+              try {
+                  const displayText = await buildFloatingTextWithQuote(data);
+                  if (data.type === 'center_fixed') {
+                      showCenterFixedComment(
+                          key, displayText, data.color, data.timestamp, false, data.size || 'medium'
+                      );
+                  } else {
+                      showFloatingComment(
+                          key, displayText, data.color, data.timestamp, false, data.size || 'medium'
+                      );
+                  }
+              } catch (error) {
+                  console.error('nicoAreaへの新規投稿表示に失敗しました:', error);
+              }
+          }, error => {
+              console.error('nicoArea投稿監視でエラー:', error);
+          });
+      } catch (error) {
+          nicoAreaListenerInitialized = false;
+          console.error('nicoArea投稿監視の開始に失敗しました:', error);
+      }
+  }
+
   function stopLiveTweetListener() {
       db.ref('tweets').off();
       if (tweetsQueryRef) { tweetsQueryRef.off(); tweetsQueryRef = null; }
@@ -812,6 +859,7 @@ const matched = (firebaseVersionKey === THIS_HTML_VERSION_KEY);
                 try {
                     await loadInitialTweetsAndMonitorChanges();
                     setupRealtimeListeners();
+                    setupNicoAreaRealtimeListener();
                 } catch (error) {
                     console.error("初期化に失敗しました:", error);
                     setFormEnabled(false);
