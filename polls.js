@@ -228,7 +228,7 @@
     // 十分細かくサンプリングし、位相移動しても波のつなぎ目が見えないようにする。
     const waveAmplitude = height - strokeWidth * 3;
     const sampleStep = 0.5;
-    const waveSpeed = 48; // SVG座標単位/秒
+    const waveSpeed = 24; // SVG座標単位/秒
     const waveStart = performance.now();
     const makeWavePath = phase => {
       let d = '';
