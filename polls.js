@@ -45,7 +45,8 @@
     .poll-tab-card.is-active { border-color:rgba(137,190,255,.45); }
     .poll-tab-number { display:inline-block; margin-right:6px; color:#b8c9d9; font-family:'Akshar',sans-serif; font-size:.9em; font-weight:normal; }
     .poll-tab-title { font-size:clamp(14px,1.8vw,19px); font-weight:bold; overflow-wrap:anywhere; }
-    .poll-tab-meta { margin:4px 0 9px; color:#b8c9d9; font-size:12px; }
+    .poll-tab-creator { margin-top:4px; color:#d3dfeb; font-size:12px; }
+    .poll-tab-meta { margin:3px 0 9px; color:#b8c9d9; font-size:12px; }
     .poll-tab-option { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 10px; margin-top:8px; font-size:13px; }
     .poll-tab-option-name { overflow-wrap:anywhere; }
     .poll-tab-option-count { color:#c5ddff; white-space:nowrap; font-family:'Akshar',sans-serif; }
@@ -440,6 +441,9 @@
           title.appendChild(number);
         }
         title.appendChild(document.createTextNode(poll.title || '（タイトルなし）'));
+        const creator = document.createElement('div');
+        creator.className = 'poll-tab-creator';
+        creator.textContent = '作成者: ' + (poll.creatorName || '不明');
         const meta = document.createElement('div');
         meta.className = 'poll-tab-meta';
         const date = poll.createdAt ? new Date(Number(poll.createdAt)).toLocaleString('ja-JP') : '';
@@ -448,7 +452,7 @@
         const total = allVotes.length;
         meta.textContent = (isActive ? '投票受付中' : '投票終了') +
           (date ? ' · ' + date : '') + ' · ' + total + '票';
-        card.append(title, meta);
+        card.append(title, creator, meta);
         if (poll.tweetNumber) {
           const actions = document.createElement('div');
           actions.className = 'poll-tab-quote-actions';
