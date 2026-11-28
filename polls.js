@@ -692,33 +692,30 @@
     updateCreateButton();
     const now = Date.now();
     const ref = db.ref('polls').push();
-    let pollNumber = 1;
-    const numberTransaction = await totalTweetCountRef.transaction(current => {
-      pollNumber = (Number(current) || 0) + 1;
-      return pollNumber;
-    });
-    if (!numberTransaction.committed) {
-      creatingPoll = false;
-      updateCreateButton();
-      status.textContent = '投稿番号を取得できませんでした。もう一度お試しください。';
-      return;
-    }
-    pollNumber = Number(numberTransaction.snapshot.val()) || pollNumber;
-    const data = {
-      tweetNumber: pollNumber,
-      title,
-      creatorName,
-      choices,
-      durationSeconds: duration,
-      createdAt: now,
-      endsAt: now + duration * 1000,
-      creatorUid: uid,
-      allowMultiple: modal.querySelector('#pollMultiple').checked,
-      showResults: modal.querySelector('#pollShowResults').checked,
-      showVoters: modal.querySelector('#pollShowVoters').checked
-    };
-
     try {
+      let pollNumber = 1;
+      const numberTransaction = await totalTweetCountRef.transaction(current => {
+        pollNumber = (Number(current) || 0) + 1;
+        return pollNumber;
+      });
+      if (!numberTransaction.committed) {
+        throw new Error('投稿番号を取得できませんでした。');
+      }
+      pollNumber = Number(numberTransaction.snapshot.val()) || pollNumber;
+      const data = {
+        tweetNumber: pollNumber,
+        title,
+        creatorName,
+        choices,
+        durationSeconds: duration,
+        createdAt: now,
+        endsAt: now + duration * 1000,
+        creatorUid: uid,
+        allowMultiple: modal.querySelector('#pollMultiple').checked,
+        showResults: modal.querySelector('#pollShowResults').checked,
+        showVoters: modal.querySelector('#pollShowVoters').checked
+      };
+
       await ref.set(data);
       await db.ref('quoteIndex/' + pollNumber).set('poll:' + ref.key);
       polls[ref.key] = data;
@@ -731,7 +728,7 @@
       closeModal();
       render();
     } catch (error) {
-      status.textContent = '保存できませんでした（' + (error.code || 'Firebaseエラー') + '）。FirebaseルールのcreatorName設定も確認してください。';
+      status.textContent = '保存できませんでした（' + (error.code || error.message || 'Firebaseエラー') + '）。Firebaseルールを確認してください。';
       console.error('投票の作成に失敗しました', error);
     } finally {
       creatingPoll = false;
