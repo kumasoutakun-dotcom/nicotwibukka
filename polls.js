@@ -20,11 +20,11 @@
     .nico-poll-option:disabled { opacity:.92; cursor:default; }
     .nico-poll-option.selected { border-color:#c5ddff; background:rgba(110,165,230,.22); }
     .poll-wavy-progress { position:absolute; left:9px; right:9px; bottom:1px; z-index:0; width:calc(100% - 18px); height:14px; pointer-events:none; overflow:hidden; }
-    .poll-wave-motion { transform-box:fill-box; transform-origin:center; animation:poll-wave-flow .5s linear infinite; }
+    .poll-wave-motion { transform-box:fill-box; transform-origin:center; animation:poll-wave-flow 15s linear infinite; }
     .poll-wave-shape { transform-box:fill-box; transform-origin:center; transition:transform 300ms cubic-bezier(.2,.8,.2,1); }
     .poll-wave-shape.amplitude-on { transform:scaleY(1); }
     .poll-wave-shape.amplitude-off { transform:scaleY(0); }
-    @keyframes poll-wave-flow { from { transform:translateX(0); } to { transform:translateX(-8px); } }
+    @keyframes poll-wave-flow { from { transform:translateX(0); } to { transform:translateX(-240px); } }
     @media (prefers-reduced-motion:reduce) { .poll-wave-motion { animation:none; } }
     .nico-poll-option .poll-option-label { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; gap:5px; min-height:16px; }
     .nico-poll-option .poll-option-name { overflow-wrap:anywhere; }
