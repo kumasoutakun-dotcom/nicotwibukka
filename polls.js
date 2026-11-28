@@ -397,7 +397,7 @@
       choices.forEach((choice, index) => {
         const count = counts[index] || 0;
         const percent = totalVoters ? Math.round(count / totalVoters * 100) : 0;
-        const selected = hasVoted ? savedIndexes.includes(index) : pending.has(index);
+        const selected = (poll.allowMultiple && active(poll) ? pending : hasVoted ? new Set(savedIndexes) : pending).has(index);
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'nico-poll-option' + (selected ? ' selected' : '');
