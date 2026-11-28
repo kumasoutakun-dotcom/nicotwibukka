@@ -12,7 +12,10 @@
     #pollBackground.poll-count-2 { grid-template-columns:1fr 1fr; }
     #pollBackground.poll-count-3, #pollBackground.poll-count-4 { grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
     .nico-poll { min-width:0; min-height:0; overflow:hidden; border:1px solid rgba(255,255,255,.2); border-radius:12px; padding:clamp(5px,1.2vw,12px); box-sizing:border-box; background:rgba(12,25,42,.82); color:#fff; backdrop-filter:blur(3px); display:flex; flex-direction:column; justify-content:center; gap:4px; pointer-events:auto; font-family:'GenZenGothicKaiC',sans-serif; text-shadow:0 1px 2px #000; }
-    .nico-poll-number { font-family:'Akshar',sans-serif; font-size:clamp(10px,1.35vw,12px); opacity:.78; line-height:1; }
+    .nico-poll-number { font-family:'Akshar',sans-serif; font-size:clamp(10px,1.35vw,12px); opacity:.78; line-height:1; cursor:pointer; border:0; padding:0; background:none; color:inherit; text-align:left; }
+    .nico-poll-requote { align-self:flex-end; min-height:25px; padding:2px 9px; border:1px solid rgba(255,255,255,.25); border-radius:999px; background:rgba(255,255,255,.12); color:#fff; cursor:pointer; font:inherit; font-size:12px; }
+    .poll-tab-quote-actions { display:flex; justify-content:flex-end; margin-top:8px; }
+    .poll-tab-requote { border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:4px 10px; background:rgba(255,255,255,.08); color:#dceaff; cursor:pointer; font:inherit; font-size:12px; }
     .nico-poll-title { font-size:clamp(11px,2.1vw,19px); font-weight:bold; line-height:1.25; overflow-wrap:anywhere; }
     .nico-poll-meta { font-size:clamp(9px,1.4vw,12px); opacity:.82; line-height:1.25; }
     .nico-poll-creator { font-size:clamp(9px,1.35vw,11px); opacity:.9; overflow-wrap:anywhere; }
@@ -430,6 +433,9 @@
           const number = document.createElement('span');
           number.className = 'poll-tab-number';
           number.textContent = '#' + poll.tweetNumber;
+          number.title = 'この投票を引用';
+          number.style.cursor = 'pointer';
+          number.addEventListener('click', () => insertQuoteIntoForm(poll.tweetNumber));
           title.appendChild(number);
         }
         title.appendChild(document.createTextNode(poll.title || '（タイトルなし）'));
@@ -442,6 +448,18 @@
         meta.textContent = (isActive ? '投票受付中' : '投票終了') +
           (date ? ' · ' + date : '') + ' · ' + total + '票';
         card.append(title, meta);
+        if (poll.tweetNumber) {
+          const actions = document.createElement('div');
+          actions.className = 'poll-tab-quote-actions';
+          const requote = document.createElement('button');
+          requote.type = 'button';
+          requote.className = 'poll-tab-requote';
+          requote.textContent = '🔄 引用';
+          requote.title = 'この投票を引用';
+          requote.addEventListener('click', () => insertQuoteIntoForm(poll.tweetNumber));
+          actions.appendChild(requote);
+          card.appendChild(actions);
+        }
         const choices = Array.isArray(poll.choices) ? poll.choices : Object.values(poll.choices || {});
         const counts = choices.map((choice, index) => allVotes.reduce((sum, value) =>
           sum + (voteIndexes(value).includes(index) ? 1 : 0), 0));
@@ -529,9 +547,12 @@
       }
       card.dataset.pollId = id;
 
-      const number = document.createElement('div');
+      const number = document.createElement('button');
+      number.type = 'button';
       number.className = 'nico-poll-number';
       number.textContent = poll.tweetNumber ? '#' + poll.tweetNumber : '';
+      number.title = 'この投票を引用';
+      number.addEventListener('click', () => insertQuoteIntoForm(poll.tweetNumber));
       const title = document.createElement('div');
       title.className = 'nico-poll-title';
       title.textContent = poll.title || '（タイトルなし）';
@@ -545,6 +566,15 @@
       const left = remaining(poll);
       meta.textContent = left > 0 ? '投票受付中 · 残り' + left + '秒' : '投票終了';
       card.append(number, title, creator, meta);
+      if (poll.tweetNumber) {
+        const requote = document.createElement('button');
+        requote.type = 'button';
+        requote.className = 'nico-poll-requote';
+        requote.textContent = '🔄 引用';
+        requote.title = 'この投票を引用';
+        requote.addEventListener('click', () => insertQuoteIntoForm(poll.tweetNumber));
+        card.appendChild(requote);
+      }
 
       const optionList = document.createElement('div');
       optionList.className = 'nico-poll-options';
