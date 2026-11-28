@@ -356,7 +356,9 @@
       return;
     }
 
-    const expected = activeEntries()
+    const expected = [...activeEntries(), ...[...endedAnnouncements.keys()]
+      .filter(id => endedAnnouncements.get(id) > Date.now() && polls[id])
+      .map(id => [id, polls[id]])]
       .sort((a, b) => Number(a[1].createdAt) - Number(b[1].createdAt))
       .slice(-4);
     const cards = [...layer.querySelectorAll('.nico-poll')];
