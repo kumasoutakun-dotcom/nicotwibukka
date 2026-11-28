@@ -744,6 +744,9 @@
         Object.values(polls).map(poll => Number(poll && poll.tweetNumber))
           .filter(number => Number.isFinite(number) && number > 0)
       );
+      if (typeof removePollCardsFromTweetStream === 'function') {
+        removePollCardsFromTweetStream();
+      }
       migrateLegacyPollNumbers();
       Object.entries(polls).forEach(([id, poll]) => {
         if (active(poll)) knownActivePollIds.add(id);
