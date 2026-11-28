@@ -78,6 +78,7 @@ nicknameInput.addEventListener('input', (e) => {
 
  
 // 投稿フォームの入力文字も、選択中の投稿カラー／フォントに合わせてプレビューする。
+// 投稿フォーム内の文字色は常に黒にし、投稿時のフォント設定との一致は維持する。
 function updateCommentInputAppearance() {
     const colorMode = predefinedColorSelect.value;
     const inputs = [
@@ -86,23 +87,13 @@ function updateCommentInputAppearance() {
         document.getElementById('comment_part2')
     ].filter(Boolean);
 
-    let previewColor = colorMode;
-    if (colorMode === 'custom') previewColor = commentColorPicker.value;
-    if (colorMode === '#FFFFFF' || /^#fff(?:fff)?$/i.test(previewColor)) previewColor = '#000000';
-
     inputs.forEach(input => {
-        input.classList.toggle('comment-input-rainbow', colorMode === 'rainbow');
-        input.style.color = colorMode === 'rainbow' ? 'transparent' : (
-            colorMode === 'split_custom' ? '#000000' : previewColor
-        );
-        input.style.webkitTextFillColor = colorMode === 'rainbow' ? 'transparent' : (
-            colorMode === 'split_custom' ? '#000000' : previewColor
-        );
-        input.style.backgroundImage = colorMode === 'rainbow'
-            ? 'linear-gradient(90deg, #ff3030, #ff9d00, #ffe600, #00c853, #168cff, #b44cff, #ff3030)'
-            : 'none';
-        input.style.backgroundClip = colorMode === 'rainbow' ? 'text' : 'border-box';
-        input.style.webkitBackgroundClip = colorMode === 'rainbow' ? 'text' : 'border-box';
+        input.classList.remove('comment-input-rainbow');
+        input.style.color = '#000000';
+        input.style.webkitTextFillColor = '#000000';
+        input.style.backgroundImage = 'none';
+        input.style.backgroundClip = 'border-box';
+        input.style.webkitBackgroundClip = 'border-box';
         input.style.fontFamily = colorMode === 'dot'
             ? "'k8x12S', sans-serif"
             : colorMode === 'split_custom'
