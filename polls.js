@@ -20,11 +20,10 @@
     .nico-poll-option:disabled { opacity:.92; cursor:default; }
     .nico-poll-option.selected { border-color:#c5ddff; background:rgba(110,165,230,.22); }
     .poll-wavy-progress { position:absolute; left:9px; right:9px; bottom:1px; z-index:0; width:calc(100% - 18px); height:14px; pointer-events:none; overflow:hidden; }
-    .poll-wave-motion { transform-box:fill-box; transform-origin:center; animation:poll-wave-flow 15s linear infinite; }
+    .poll-wave-motion { }
     .poll-wave-shape { transform-box:fill-box; transform-origin:center; transition:transform 300ms cubic-bezier(.2,.8,.2,1); }
     .poll-wave-shape.amplitude-on { transform:scaleY(1); }
     .poll-wave-shape.amplitude-off { transform:scaleY(0); }
-    @keyframes poll-wave-flow { from { transform:translateX(0); } to { transform:translateX(-240px); } }
     @media (prefers-reduced-motion:reduce) { .poll-wave-motion { animation:none; } }
     .nico-poll-option .poll-option-label { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; gap:5px; min-height:16px; }
     .nico-poll-option .poll-option-name { overflow-wrap:anywhere; }
@@ -228,12 +227,17 @@
     // 波長単位の曲線を個別に並べず、全幅をひと続きの正弦波パスとして生成。
     // 十分細かくサンプリングし、位相移動しても波のつなぎ目が見えないようにする。
     const waveAmplitude = height - strokeWidth * 3;
-    const sampleStep = 0.25;
-    let d = '';
-    for (let x = -80; x <= width + 80; x += sampleStep) {
-      const y = Math.sin((x / wavelength) * Math.PI * 2) * waveAmplitude;
-      d += (d ? ' L ' : 'M ') + x.toFixed(2) + ' ' + y.toFixed(3);
-    }
+    const sampleStep = 0.5;
+    const waveSpeed = 48; // SVG座標単位/秒
+    const waveStart = performance.now();
+    const makeWavePath = phase => {
+      let d = '';
+      for (let x = -80; x <= width + 80; x += sampleStep) {
+        const y = Math.sin(((x + phase) / wavelength) * Math.PI * 2) * waveAmplitude;
+        d += (d ? ' L ' : 'M ') + x.toFixed(2) + ' ' + y.toFixed(3);
+      }
+      return d;
+    };
 
     const motion = document.createElementNS(svgNS, 'g');
     motion.setAttribute('class', 'poll-wave-motion');
@@ -245,7 +249,7 @@
     shape.setAttribute('class', 'poll-wave-shape ' + (amplitude ? 'amplitude-on' : 'amplitude-off'));
 
     const progressPath = document.createElementNS(svgNS, 'path');
-    progressPath.setAttribute('d', d);
+    progressPath.setAttribute('d', makeWavePath(0));
     progressPath.setAttribute('fill', 'none');
     progressPath.setAttribute('stroke', '#B8D5FF');
     progressPath.setAttribute('stroke-width', String(strokeWidth));
@@ -255,6 +259,24 @@
     centered.appendChild(shape);
     motion.appendChild(centered);
     svg.appendChild(motion);
+
+    // 1波長単位のパーツをループさせず、毎フレーム、全幅の一本の波形を再生成する。
+    // 位相だけを連続的に進めるため、生成端も常に同じ波形につながり、継ぎ目が発生しない。
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduceMotion) {
+      let frameId = 0;
+      const animateWave = now => {
+        if (!svg.isConnected) {
+          cancelAnimationFrame(frameId);
+          return;
+        }
+        const elapsed = (now - waveStart) / 1000;
+        const phase = (elapsed * waveSpeed) % wavelength;
+        progressPath.setAttribute('d', makeWavePath(phase));
+        frameId = requestAnimationFrame(animateWave);
+      };
+      frameId = requestAnimationFrame(animateWave);
+    }
 
     // Track は進捗ヘッドの前後に公式と同じ gap + 丸端分の余白を確保して描画。
     const adjustedGap = head < cap ? 0 : Math.min(head - cap, gapSize);
