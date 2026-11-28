@@ -51,7 +51,7 @@ body {
        そのまま追従させる。 */
     overflow: visible;
     background: #0a1b2a; /* スクロール時などに下に隙間が見えても白飛びしないようにする保険 */
-    font-family: 'Akshar', 'GenZenGothicKaiC', sans-serif;
+    font-family: 'k8x12S', sans-serif;
     font-weight: 700;
     font-synthesis: none; /* Akshar以外の日本語フォントを擬似太字にしない */
     font-size: 24px;
@@ -573,7 +573,7 @@ input, select {
     min-width: 80px;
 }
 input::placeholder {
-    font-family: 'Akshar', 'GenZenGothicKaiC', sans-serif;
+    font-family: 'k8x12S', sans-serif;
 }
 
 input#comment  { min-width: 300px; }
@@ -769,7 +769,7 @@ button:disabled {
     font-size: 0.6em;
     line-height: 1.3;
     overflow-wrap: anywhere;
-    font-family: 'Akshar', 'GenZenGothicKaiC', sans-serif !important; /* 引用元(投稿)のdot-fontを継承しないようリセット */
+    font-family: 'k8x12S', sans-serif !important;
 }
 .quote-card .part-upper,
 .quote-card .part-lower {
@@ -837,7 +837,7 @@ button:disabled {
 .quote-poll-choice-percent {
     color: #c5ddff;
     white-space: nowrap;
-    font-family: 'Akshar', 'GenZenGothicKaiC', sans-serif;
+    font-family: 'k8x12S', sans-serif;
 }
 .quote-poll-choice-bar {
     grid-column: 1 / -1;
@@ -2419,4 +2419,19 @@ textarea {
     padding: 0 2px !important;
     line-height: 14px !important;
     font-size: 0.72em !important;
+}
+
+
+/* GenZenGothicKaiCを維持する領域：
+   投稿本文・投稿者名・引用元本文・投票題名/選択肢・入力中の投稿本文/名前 */
+input#comment,
+input#nickname,
+#pollCreatorBox #pollTitle,
+#pollCreatorBox .poll-choice-row input,
+.tweet .tweet-text-content:not(.dot-font),
+.quote-preview-body,
+.quote-card-body,
+.quote-poll-title,
+.quote-poll-choice-name {
+    font-family: 'Akshar', 'GenZenGothicKaiC', sans-serif;
 }
