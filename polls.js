@@ -190,6 +190,9 @@
     const svgNS = 'http://www.w3.org/2000/svg';
     const progress = Math.max(0, Math.min(100, Number(percent) || 0)) / 100;
 
+    // Android Open Source Project / AndroidX WavyProgressIndicator.kt
+    // https://android.googlesource.com/platform/frameworks/support/+/b53e8b678a01262be55a336961e4182b75fa0867/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt
+    // Algorithm port based on Apache-2.0-licensed source.
     // AndroidX LinearProgressDrawingCache の線形確定形式を SVG に移植。
     // 公式の波形生成（交互の二次ベジェ）、PathMeasure 相当の区間切り出し、
     // 進捗ヘッド周辺のトラックギャップ、終端ストップインジケーターを再現する。
@@ -240,9 +243,10 @@
     motion.setAttribute('class', 'poll-wave-motion');
     motion.setAttribute('clip-path', 'url(#' + clipName + ')');
 
+    const centered = document.createElementNS(svgNS, 'g');
+    centered.setAttribute('transform', 'translate(0 10)');
     const shape = document.createElementNS(svgNS, 'g');
     shape.setAttribute('class', 'poll-wave-shape ' + (amplitude ? 'amplitude-on' : 'amplitude-off'));
-    shape.setAttribute('transform', 'translate(0 10)');
 
     const progressPath = document.createElementNS(svgNS, 'path');
     progressPath.setAttribute('d', d);
@@ -252,7 +256,8 @@
     progressPath.setAttribute('stroke-linecap', 'round');
     progressPath.setAttribute('vector-effect', 'non-scaling-stroke');
     shape.appendChild(progressPath);
-    motion.appendChild(shape);
+    centered.appendChild(shape);
+    motion.appendChild(centered);
     svg.appendChild(motion);
 
     // Track は進捗ヘッドの前後に公式と同じ gap + 丸端分の余白を確保して描画。
