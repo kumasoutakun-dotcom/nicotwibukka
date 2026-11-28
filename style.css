@@ -641,6 +641,22 @@ select#commentSize {
     flex-shrink: 0;
     margin-left: auto;
 }
+#pollCreatorButton {
+    padding: 10px 16px;
+    font-size: 24px;
+    font-family: 'k8x12S', sans-serif;
+    background: #647fba;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+#pollCreatorButton:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
 #clearInputBtn {
     padding: 10px 20px;
     font-size: 24px;
