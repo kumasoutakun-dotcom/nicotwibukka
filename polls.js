@@ -41,23 +41,19 @@
     #twiArea.polls-tab-active #allUsers, #twiArea.polls-tab-active #replayPanel, #twiArea.polls-tab-active #adminPanel { display:none !important; }
     .poll-tab-section { margin:0 0 18px; }
     .poll-tab-heading { margin:12px 0 8px; color:#c5ddff; font-size:clamp(15px,2vw,22px); }
-    .poll-tab-card { display:grid; grid-template-columns:minmax(0,1fr); grid-template-areas:"title" "creator" "meta" "options" "actions"; row-gap:0; column-gap:8px; align-items:center; color:#fff; }
-    .poll-tab-card .poll-tab-title { font-size:1em; font-weight:700; line-height:1.2; }
-    .poll-tab-card .poll-tab-creator { margin-top:0; color:#d3dfeb; font-size:.55em; }
-    .poll-tab-card .poll-tab-meta { margin:2px 0 5px; color:#aaa; font-size:.5em; }
-    .poll-tab-card .poll-tab-option { font-size:.58em; }
-    .poll-tab-number { display:inline-block; margin-right:6px; color:#aaa; font-family:'k8x12S',sans-serif; font-size:.9em; font-weight:normal; cursor:pointer; }
-    .poll-tab-title { grid-area:title; min-width:0; font-family:'Akshar','GenZenGothicKaiC',sans-serif; font-size:clamp(14px,1.8vw,19px); font-weight:bold; overflow-wrap:anywhere; }
-    .poll-tab-creator { grid-area:creator; margin-top:1px; font-family:'Akshar','GenZenGothicKaiC',sans-serif; color:#d3dfeb; font-size:12px; }
-    .poll-tab-meta { grid-area:meta; margin:2px 0 5px; color:#aaa; font-size:12px; }
-    .poll-tab-options { grid-area:options; min-width:0; }
-    .poll-tab-option { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 10px; margin-top:7px; font-size:13px; }
-    .poll-tab-option-name { font-family:'Akshar','GenZenGothicKaiC',sans-serif; overflow-wrap:anywhere; }
-    .poll-tab-option-count { color:#c5ddff; white-space:nowrap; font-family:'k8x12S',sans-serif; }
-    .poll-tab-bar { grid-column:1 / -1; height:6px; border-radius:99px; overflow:hidden; background:rgba(255,255,255,.1); }
-    .poll-tab-bar-fill { height:100%; border-radius:inherit; background:#8db9eb; }
-    .poll-tab-quote-actions { grid-area:actions; display:flex; justify-content:flex-start; margin-top:5px; }
-    .poll-tab-requote { border:0; border-radius:999px; padding:3px 9px; background:rgba(255,255,255,.08); color:#cfd8e3; cursor:pointer; font:inherit; font-size:12px; }
+    .poll-tab-card { display:grid; }
+    .poll-tab-card .tweet-meta-namegroup { min-width:0; }
+    .poll-tab-card .poll-tab-number { display:inline-block; margin-right:6px; color:#aaa; font-family:'k8x12S',sans-serif; font-size:.9em; cursor:pointer; }
+    .poll-tab-card .poll-tab-title { display:block; min-width:0; font-family:'Akshar','GenZenGothicKaiC',sans-serif; font-weight:bold; overflow-wrap:anywhere; }
+    .poll-tab-card .poll-tab-options { display:grid; gap:7px; margin-top:8px; min-width:0; }
+    .poll-tab-card .poll-tab-option { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 10px; font-size:.72em; }
+    .poll-tab-card .poll-tab-option-name { min-width:0; font-family:'Akshar','GenZenGothicKaiC',sans-serif; overflow-wrap:anywhere; }
+    .poll-tab-card .poll-tab-option-count { color:#c5ddff; white-space:nowrap; font-family:'k8x12S',sans-serif; }
+    .poll-tab-card .poll-tab-bar { grid-column:1 / -1; height:6px; border-radius:99px; overflow:hidden; background:rgba(255,255,255,.1); }
+    .poll-tab-card .poll-tab-bar-fill { height:100%; border-radius:inherit; background:#8db9eb; }
+    .poll-tab-card .poll-tab-no-votes { margin-top:6px; color:#aaa; font-size:.7em; }
+    .poll-tab-card .poll-tab-requote { min-height:18px; height:18px; padding:0 3px; border:0; border-radius:999px; background:transparent; color:#aab7c4; cursor:pointer; font:inherit; font-size:.82em; line-height:1; }
+    .poll-tab-card .poll-tab-requote:hover { background:rgba(138,180,232,.14); color:#d9eaff; }
     .poll-tab-empty { padding:14px; border:1px dashed rgba(255,255,255,.18); border-radius:12px; color:#b8c9d9; font-size:13px; text-align:center; }
 
     .nico-poll-announcement { align-items:center; text-align:center; gap:7px; background:linear-gradient(145deg,rgba(32,73,111,.96),rgba(12,25,42,.94)); border-color:rgba(184,213,255,.55); animation:pollAnnouncementIn .35s ease-out both; }
@@ -433,33 +429,41 @@
         panel.appendChild(section);
         return;
       }
+
       items.forEach(([id, poll]) => {
+        // 新着投稿と同じ .tweet のDOMスロットを使用し、カードの外観・余白・文字サイズを共有する。
         const card = document.createElement('article');
         card.className = 'tweet poll-tab-card';
-        const title = document.createElement('div');
-        title.className = 'poll-tab-title';
+
+        const namegroup = document.createElement('span');
+        namegroup.className = 'tweet-meta-namegroup';
         if (poll.tweetNumber) {
           const number = document.createElement('span');
           number.className = 'poll-tab-number';
           number.textContent = '#' + poll.tweetNumber;
           number.title = 'この投票を引用';
           number.addEventListener('click', () => insertQuoteIntoForm(poll.tweetNumber));
-          title.appendChild(number);
+          namegroup.appendChild(number);
         }
-        title.appendChild(document.createTextNode(poll.title || '（タイトルなし）'));
+        const creator = document.createElement('span');
+        creator.className = 'tweet-username';
+        creator.textContent = '@' + (poll.creatorName || '不明');
+        namegroup.appendChild(creator);
 
-        const creator = document.createElement('div');
-        creator.className = 'poll-tab-creator';
-        creator.textContent = '作成者：' + (poll.creatorName || '不明');
-
-        const meta = document.createElement('div');
-        meta.className = 'poll-tab-meta';
-        const date = poll.createdAt ? new Date(Number(poll.createdAt)).toLocaleString('ja-JP') : '';
+        const timestamp = document.createElement('span');
+        timestamp.className = 'tweet-meta-timestamp';
+        const date = poll.createdAt ? formatPollTimestamp(poll.createdAt) : '';
         const pollVotes = votes[id] || {};
         const allVotes = Object.values(pollVotes);
-        const total = allVotes.length;
-        meta.textContent = (isActive ? '投票受付中' : '投票終了') +
-          (date ? ' · ' + date : '') + ' · ' + total + '票';
+        timestamp.textContent = (date ? date + ' · ' : '') +
+          (isActive ? '投票受付中' : '投票終了') + ' · ' + allVotes.length + '票';
+
+        const content = document.createElement('div');
+        content.className = 'tweet-text-content size-medium poll-tab-content';
+        const title = document.createElement('div');
+        title.className = 'poll-tab-title';
+        title.textContent = poll.title || '（タイトルなし）';
+        content.appendChild(title);
 
         const options = document.createElement('div');
         options.className = 'poll-tab-options';
@@ -467,7 +471,7 @@
         const counts = choices.map((choice, index) => allVotes.reduce((sum, value) =>
           sum + (voteIndexes(value).includes(index) ? 1 : 0), 0));
         choices.forEach((choice, index) => {
-          const percent = total ? Math.round(counts[index] / total * 100) : 0;
+          const percent = allVotes.length ? Math.round(counts[index] / allVotes.length * 100) : 0;
           const row = document.createElement('div');
           row.className = 'poll-tab-option';
           const name = document.createElement('span');
@@ -485,32 +489,37 @@
           row.append(name, count, bar);
           options.appendChild(row);
         });
-        if (!total) {
+        if (!allVotes.length) {
           const noVotes = document.createElement('div');
-          noVotes.className = 'poll-tab-meta';
+          noVotes.className = 'poll-tab-no-votes';
           noVotes.textContent = 'まだ投票はありません。';
           options.appendChild(noVotes);
         }
+        content.appendChild(options);
 
-        card.append(title, creator, meta, options);
+        const actions = document.createElement('span');
+        actions.className = 'tweet-meta-actions';
         if (poll.tweetNumber) {
-          const actions = document.createElement('div');
-          actions.className = 'poll-tab-quote-actions';
           const requote = document.createElement('button');
           requote.type = 'button';
           requote.className = 'poll-tab-requote';
-          requote.textContent = '🔄 引用';
+          requote.textContent = '🔄';
           requote.title = 'この投票を引用';
           requote.addEventListener('click', () => insertQuoteIntoForm(poll.tweetNumber));
           actions.appendChild(requote);
-          card.appendChild(actions);
         }
+
+        card.append(namegroup, timestamp, content, actions);
         section.appendChild(card);
       });
       panel.appendChild(section);
     };
     makeSection('進行中の投票', activePolls, true);
     makeSection('過去の投票結果', finishedPolls, false);
+  }
+
+  function formatPollTimestamp(timestamp) {
+    return new Date(Number(timestamp)).toLocaleString('ja-JP');
   }
 
   function render() {
