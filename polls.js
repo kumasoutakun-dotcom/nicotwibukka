@@ -32,6 +32,11 @@
     .poll-submit-vote { min-height:28px; border:0; border-radius:999px; padding:4px 12px; background:#c2dcff; color:#10243a; font:inherit; font-size:clamp(10px,1.5vw,13px); font-weight:bold; cursor:pointer; }
     .poll-submit-vote:disabled { opacity:.45; cursor:default; }
     .poll-empty { border:1px dashed rgba(255,255,255,.12); border-radius:12px; background:rgba(0,0,0,.12); }
+    .nico-poll-announcement { align-items:center; text-align:center; gap:7px; background:linear-gradient(145deg,rgba(32,73,111,.96),rgba(12,25,42,.94)); border-color:rgba(184,213,255,.55); animation:pollAnnouncementIn .35s ease-out both; }
+    .nico-poll-announcement-label { color:#c5ddff; font-size:clamp(13px,2.5vw,22px); font-weight:bold; }
+    .nico-poll-announcement-winner { font-size:clamp(12px,2vw,18px); font-weight:bold; overflow-wrap:anywhere; }
+    .nico-poll-announcement-detail { font-size:clamp(9px,1.4vw,12px); opacity:.85; }
+    @keyframes pollAnnouncementIn { from { opacity:0; transform:scale(.96); } to { opacity:1; transform:scale(1); } }
     #pollCreatorButton { position:relative; z-index:8; width:100%; margin-top:6px; min-height:34px; border:1px solid rgba(255,255,255,.18); border-radius:12px; background:rgba(130,170,220,.16); color:inherit; font:inherit; cursor:pointer; }
     #pollCreatorButton:disabled { opacity:.55; cursor:not-allowed; }
     #pollCreatorModal { position:fixed; inset:0; z-index:10000; display:none; align-items:center; justify-content:center; padding:14px; background:rgba(0,0,0,.68); }
@@ -100,6 +105,9 @@
   let creatingPoll = false;
   const pendingSelections = new Map();
   const submittingVotes = new Set();
+  const knownActivePollIds = new Set();
+  const endedAnnouncements = new Map();
+  const ANNOUNCEMENT_DURATION = 10000;
 
   const remaining = poll => Math.max(0, Math.ceil((Number(poll.endsAt) - Date.now()) / 1000));
   const active = poll => !!poll && Number(poll.endsAt) > Date.now();
@@ -323,6 +331,31 @@
   }
 
   function tick() {
+    const now = Date.now();
+    let announcementChanged = false;
+    Object.entries(polls || {}).forEach(([id, poll]) => {
+      if (active(poll)) {
+        knownActivePollIds.add(id);
+      } else if (knownActivePollIds.has(id)) {
+        knownActivePollIds.delete(id);
+        const pollVotes = votes[id] || {};
+        if (Object.keys(pollVotes).length > 0) {
+          endedAnnouncements.set(id, now + ANNOUNCEMENT_DURATION);
+          announcementChanged = true;
+        }
+      }
+    });
+    for (const [id, until] of endedAnnouncements) {
+      if (until <= now) {
+        endedAnnouncements.delete(id);
+        announcementChanged = true;
+      }
+    }
+    if (announcementChanged) {
+      render();
+      return;
+    }
+
     const expected = activeEntries()
       .sort((a, b) => Number(a[1].createdAt) - Number(b[1].createdAt))
       .slice(-4);
@@ -346,7 +379,14 @@
   }
 
   function render() {
-    const list = activeEntries().sort((a, b) => Number(a[1].createdAt) - Number(b[1].createdAt)).slice(-4);
+    const now = Date.now();
+    const activeList = activeEntries();
+    const announcementList = [...endedAnnouncements.keys()]
+      .filter(id => endedAnnouncements.get(id) > now && polls[id])
+      .map(id => [id, polls[id]]);
+    const list = [...activeList, ...announcementList]
+      .sort((a, b) => Number(a[1].createdAt) - Number(b[1].createdAt))
+      .slice(-4);
     layer.className = '';
     layer.classList.add('poll-count-' + list.length);
     layer.replaceChildren();
@@ -363,6 +403,30 @@
       const [id, poll] = entry;
       const card = document.createElement('section');
       card.className = 'nico-poll';
+      if (endedAnnouncements.has(id) && endedAnnouncements.get(id) > Date.now()) {
+        card.classList.add('nico-poll-announcement');
+        const pollVotes = votes[id] || {};
+        const allVotes = Object.values(pollVotes);
+        const choices = Array.isArray(poll.choices) ? poll.choices : Object.values(poll.choices || {});
+        const counts = choices.map((choice, index) => allVotes.reduce((sum, value) => sum + (voteIndexes(value).includes(index) ? 1 : 0), 0));
+        const maxVotes = Math.max(0, ...counts);
+        const winners = choices.filter((choice, index) => counts[index] === maxVotes && maxVotes > 0);
+        const label = document.createElement('div');
+        label.className = 'nico-poll-announcement-label';
+        label.textContent = '🎉 投票結果発表';
+        const question = document.createElement('div');
+        question.className = 'nico-poll-title';
+        question.textContent = poll.title || '投票';
+        const winner = document.createElement('div');
+        winner.className = 'nico-poll-announcement-winner';
+        winner.textContent = winners.length > 1 ? '同率1位：' + winners.join('・') : '1位：' + (winners[0] || '');
+        const detail = document.createElement('div');
+        detail.className = 'nico-poll-announcement-detail';
+        detail.textContent = '総投票数 ' + allVotes.length + '票';
+        card.append(label, question, winner, detail);
+        layer.appendChild(card);
+        return;
+      }
       card.dataset.pollId = id;
 
       const title = document.createElement('div');
@@ -481,7 +545,10 @@
     dbRef = db.ref('polls');
     pollListener = dbRef.on('value', snapshot => {
       polls = snapshot.val() || {};
-      Object.keys(polls).forEach(attachVoteListener);
+      Object.entries(polls).forEach(([id, poll]) => {
+        if (active(poll)) knownActivePollIds.add(id);
+        attachVoteListener(id);
+      });
       render();
     }, error => console.error('投票データ取得失敗', error));
     timer = setInterval(tick, 1000);
