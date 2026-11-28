@@ -337,6 +337,8 @@ function isPollStreamData(data) {
   }
 
   function appendTweetToStream(key, data, tweetIndex, isNewTweet = false) {
+    // Firebaseに欠損レコードがあっても、他の投稿の描画を止めない。
+    if (!data || typeof data !== 'object') return;
     // 投票データは独立した「投票」タブに限定し、新着／話題の投稿一覧には描画しない。
     if (isPollStreamData(data)) return;
     // 引用(#数字)がある場合、表示用テキストからその「#数字」部分を取り除く
@@ -393,11 +395,11 @@ function isPollStreamData(data) {
     const formattedTime = formatTimestamp(data.timestamp);
     const reacted = data.reactedUsers && data.reactedUsers[currentUser];
     const reactionCount = data.reactions || 0;
-    const originalName = data.name
-    // 投稿者名が匿名かどうかをチェック
-    const isAnonymousPost = !originalName || originalName.trim() === '';
+    const originalName = String(data.name || '');
+    // 投稿者名が欠損した古いデータも匿名投稿として安全に表示する。
+    const isAnonymousPost = originalName.trim() === '';
     const maxNameLength = 15;
-    const displayUserName = originalName.length > maxNameLength ? originalName.substring(0, maxNameLength) + '...' : originalName;
+    const displayUserName = originalName.length > maxNameLength ? originalName.substring(0, maxNameLength) + '...' : (originalName || '名無し');
     const currentTweetNumber = data.tweetNumber || tweetIndex || 0;
     const isLongText = sanitizedText.length > MAX_LOG_COMMENT_LENGTH;
     const isOverFlow = isLongText; // 暫定的な判断。日本語対応は後述のJSで実施。
