@@ -639,16 +639,27 @@ function getFloatingCommentYPosition(durationMs) { // durationMs が正確か確
       const found = await fetchQuotedTweetInfo(data.quote);
       if (!found) return rawText;
       const isPollQuote = found.type === 'poll' || !!found.data.choices;
-      // nicoareaでは投票への引用番号を、投票タイトルに置き換えて流す
-      const snippet = isPollQuote
-          ? DOMPurify.sanitize(found.data.title || '投票')
-          : buildQuotePlainSnippet(found.data);
+      let snippet;
+      if (isPollQuote) {
+          const title = DOMPurify.sanitize(found.data.title || '投票');
+          const choices = Array.isArray(found.data.choices) ? found.data.choices : Object.values(found.data.choices || {});
+          const voteValues = Object.values(found.votes || {});
+          const details = choices.map((choice, index) => {
+              const count = voteValues.reduce((sum, value) => {
+                  const indexes = Array.isArray(value) ? value : (typeof value === 'number' ? [value] :
+                      (value && typeof value === 'object' ? Object.keys(value).filter(key => value[key] === true).map(Number) : []));
+                  return sum + (indexes.includes(index) ? 1 : 0);
+              }, 0);
+              const percent = voteValues.length ? Math.round(count / voteValues.length * 100) : 0;
+              return (index + 1) + '. ' + DOMPurify.sanitize(String(choice)) + ' ' + percent + '%';
+          });
+          snippet = title + '【' + details.join('／') + '】';
+      } else {
+          snippet = buildQuotePlainSnippet(found.data);
+      }
       const markerRegex = new RegExp('#' + data.quote + '\\s*');
       const insertion = isPollQuote ? `${snippet}　` : `#${data.quote}　${snippet}　`;
-      if (markerRegex.test(rawText)) {
-          return rawText.replace(markerRegex, insertion);
-      }
-      // 万一本文中に#番号が見当たらない場合は先頭に付ける
+      if (markerRegex.test(rawText)) return rawText.replace(markerRegex, insertion);
       return insertion + rawText;
   }
 
