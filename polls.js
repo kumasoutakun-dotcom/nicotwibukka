@@ -740,6 +740,10 @@
     dbRef = db.ref('polls');
     pollListener = dbRef.on('value', snapshot => {
       polls = snapshot.val() || {};
+      window.pollTweetNumbers = new Set(
+        Object.values(polls).map(poll => Number(poll && poll.tweetNumber))
+          .filter(number => Number.isFinite(number) && number > 0)
+      );
       migrateLegacyPollNumbers();
       Object.entries(polls).forEach(([id, poll]) => {
         if (active(poll)) knownActivePollIds.add(id);
